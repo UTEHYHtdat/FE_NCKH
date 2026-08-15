@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Shield, Calendar, Users, Plus, Search, Filter } from 'lucide-react';
+import { Shield, Calendar, Users, Plus, Search, Filter, Crown, FileText } from 'lucide-react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge, getStatusBadgeVariant } from '@/components/ui/badge';
@@ -121,14 +121,22 @@ export function DefenseCouncils() {
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span>{council.defense_date || 'Chưa xác định'}</span>
+                    <span>{council.defense_date ? new Date(council.defense_date).toLocaleDateString('vi-VN') : 'Chưa xác định'}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <Shield className="w-4 h-4 text-muted-foreground" />
+                    <Crown className="w-4 h-4 text-yellow-600 shrink-0" />
+                    <span className="truncate">Chủ tịch: {council.instructors_defense_councils_chairman_idToinstructors?.users?.full_name || 'Chưa phân công'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span className="truncate">Thư ký: {council.instructors_defense_councils_secretary_idToinstructors?.users?.full_name || 'Chưa phân công'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Shield className="w-4 h-4 text-muted-foreground shrink-0" />
                     <span>{council.defense_assignments?.length || 0} luận văn</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <Users className="w-4 h-4 text-muted-foreground" />
+                    <Users className="w-4 h-4 text-muted-foreground shrink-0" />
                     <span>{council.council_members?.length || 0} thành viên</span>
                   </div>
                 </div>

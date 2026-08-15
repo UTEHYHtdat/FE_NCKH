@@ -297,7 +297,7 @@ export const adminService = {
    * POST /api/admin/students
    */
   async createStudent(data: CreateStudentRequest): Promise<any> {
-    return apiClient.post<any>('/api/admin/students', data);
+    return apiClient.post<any>('/api/admin/users/students', data);
   },
 
   /**
@@ -305,7 +305,7 @@ export const adminService = {
    * POST /api/admin/instructors
    */
   async createInstructor(data: CreateInstructorRequest): Promise<any> {
-    return apiClient.post<any>('/api/admin/instructors', data);
+    return apiClient.post<any>('/api/admin/users/instructors', data);
   },
 
   /**

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/Modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { thesisRoundsService, councilService } from '@/plugins/api';
+import { thesisRoundsService, councilService, apiClient } from '@/plugins/api';
 import type { ThesisRound } from '@/types/api';
 
 interface ReviewScheduleItem {
@@ -46,6 +46,7 @@ interface ScheduleForm {
   committeeId?: number;
   reviewer1?: string;
   reviewer2?: string;
+  gradingTemplateId?: number;
   scheduledDate: string;
   scheduledTime: string;
   location: string;
@@ -63,6 +64,13 @@ export function HeadReviewSchedule() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [gradingTemplates, setGradingTemplates] = useState<any[]>([]);
+  const [isAutoScheduleModalOpen, setIsAutoScheduleModalOpen] = useState(false);
+  const [autoScheduleForm, setAutoScheduleForm] = useState({
+    date: '',
+    room: ''
+  });
+
 
   // Multi-schedule creation state
   const [scheduleForms, setScheduleForms] = useState<ScheduleForm[]>([
@@ -79,6 +87,7 @@ export function HeadReviewSchedule() {
   useEffect(() => {
     fetchRounds();
     fetchCouncils();
+    fetchGradingTemplates();
     // Load schedules from localStorage
     const savedSchedules = localStorage.getItem('reviewSchedules');
     if (savedSchedules) {
@@ -155,6 +164,15 @@ export function HeadReviewSchedule() {
       setCommittees(mappedCommittees);
     } catch (error) {
       console.error('Error fetching councils:', error);
+    }
+  };
+
+  const fetchGradingTemplates = async () => {
+    try {
+      const response = await apiClient.get<any[]>('/api/v1/thesis/admin/grading-templates');
+      setGradingTemplates(response);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
     }
   };
 
@@ -240,6 +258,59 @@ export function HeadReviewSchedule() {
     setEditingSchedule(null);
   };
 
+  const handleAutoSchedule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!autoScheduleForm.date || !autoScheduleForm.room) {
+      toast.error('Vui lòng nhập ngày và phòng!');
+      return;
+    }
+
+    // Mock theses to schedule
+    const mockTheses = [
+      { id: 1, title: 'Nghiên cứu AI', code: 'TH001', group: 'Nhóm 1', students: ['Nguyễn Văn A'] },
+      { id: 2, title: 'Ứng dụng Blockchain', code: 'TH002', group: 'Nhóm 2', students: ['Trần Thị B'] },
+      { id: 3, title: 'Phát triển Web React', code: 'TH003', group: 'Nhóm 3', students: ['Lê Văn C'] },
+      { id: 4, title: 'Phân tích Dữ liệu Lớn', code: 'TH004', group: 'Nhóm 4', students: ['Phạm Văn D'] },
+    ];
+
+    const mockTeachers = [
+      'TS. Nguyễn Văn A', 'TS. Trần Thị B', 'ThS. Lê Văn C', 'PGS. TS. Phạm Văn D', 'TS. Vũ Thị E'
+    ];
+
+    const newSchedules: ReviewScheduleItem[] = mockTheses.map((thesis, index) => {
+      let reviewerName = 'GV Phản biện';
+      if (committees.length > 0) {
+         const randomCommittee = committees[Math.floor(Math.random() * committees.length)];
+         const reviewers = randomCommittee.members.filter(m => m.role === 'reviewer');
+         reviewerName = reviewers.length > 0 ? reviewers[0].name : randomCommittee.members[0]?.name || 'GV Phản biện';
+      } else {
+         reviewerName = mockTeachers[Math.floor(Math.random() * mockTeachers.length)];
+      }
+
+      return {
+        id: Date.now() + index,
+        thesisCode: thesis.code,
+        thesisTitle: thesis.title,
+        groupName: thesis.group,
+        students: thesis.students,
+        supervisor: mockTeachers[Math.floor(Math.random() * mockTeachers.length)],
+        reviewer: reviewerName,
+        scheduledDate: autoScheduleForm.date,
+        scheduledTime: `${8 + (index * 2)}:00`,
+        location: autoScheduleForm.room,
+        status: 'SCHEDULED'
+      };
+    });
+
+    const updatedSchedules = [...schedules, ...newSchedules];
+    setSchedules(updatedSchedules);
+    localStorage.setItem('reviewSchedules', JSON.stringify(updatedSchedules));
+    
+    toast.success(`Đã xếp lịch tự động thành công cho ${newSchedules.length} đề tài!`);
+    setIsAutoScheduleModalOpen(false);
+    setAutoScheduleForm({ date: '', room: '' });
+  };
+
   return (
     <PageLayout
       userRole={userRole as any}
@@ -307,6 +378,10 @@ export function HeadReviewSchedule() {
                   <SelectItem value="CANCELLED">Đã hủy</SelectItem>
                 </SelectContent>
               </Select>
+              <Button onClick={() => setIsAutoScheduleModalOpen(true)} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
+                <Calendar className="w-4 h-4 mr-2" />
+                Xếp lịch tự động
+              </Button>
               <Button onClick={() => setIsCreateModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Tạo lịch mới
@@ -555,7 +630,7 @@ export function HeadReviewSchedule() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Giảng viên phản biện 1</label>
                     <Select
@@ -582,6 +657,25 @@ export function HeadReviewSchedule() {
                       </SelectTrigger>
                       <SelectContent>
                         {/* TODO: Load from API */}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Form chấm điểm</label>
+                    <Select
+                      value={form.gradingTemplateId?.toString() || ''}
+                      onValueChange={(value) => updateScheduleForm(index, 'gradingTemplateId', Number(value))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn form chấm điểm..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {gradingTemplates.map((template) => (
+                          <SelectItem key={template.id} value={template.id.toString()}>
+                            {template.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -700,6 +794,54 @@ export function HeadReviewSchedule() {
               Hủy
             </Button>
             <Button type="submit">Lưu thay đổi</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Auto Schedule Modal */}
+      <Modal
+        isOpen={isAutoScheduleModalOpen}
+        onClose={() => setIsAutoScheduleModalOpen(false)}
+        title="Xếp lịch tự động"
+        size="md"
+      >
+        <form onSubmit={handleAutoSchedule} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Đợt khóa luận</label>
+            <Input 
+              value={selectedRound ? `${selectedRound.round_name} (${selectedRound.round_code || 'ĐK' + selectedRound.id}) - ${selectedRound.academic_year}` : 'Chưa chọn đợt khóa luận'} 
+              disabled 
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Ngày phản biện</label>
+            <Input
+              type="date"
+              value={autoScheduleForm.date}
+              onChange={(e) => setAutoScheduleForm({ ...autoScheduleForm, date: e.target.value })}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Phòng (Địa điểm)</label>
+            <Input
+              placeholder="VD: Phòng họp A - Tầng 3"
+              value={autoScheduleForm.room}
+              onChange={(e) => setAutoScheduleForm({ ...autoScheduleForm, room: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">
+            <Button variant="ghost" type="button" onClick={() => setIsAutoScheduleModalOpen(false)}>
+              Hủy
+            </Button>
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Calendar className="w-4 h-4 mr-2" />
+              Tạo lịch ngẫu nhiên
+            </Button>
           </div>
         </form>
       </Modal>

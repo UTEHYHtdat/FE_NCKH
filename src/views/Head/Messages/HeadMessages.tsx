@@ -14,7 +14,9 @@ import {
 } from '@/plugins/api';
 
 function formatTime(dateStr: string): string {
+  if (!dateStr) return '';
   const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
   return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 }
 
@@ -53,7 +55,15 @@ export function HeadMessages() {
 
     const socket = connectSocket(token);
 
-    socket.on('newMessage', (msg: ChatMessage) => {
+    socket.on('newMessage', (rawMsg: any) => {
+      const msg: ChatMessage = {
+        id: rawMsg.id,
+        conversation_id: rawMsg.conversationId || rawMsg.conversation_id,
+        sender_id: rawMsg.sender?.id || rawMsg.sender_id,
+        content: rawMsg.content,
+        created_at: rawMsg.createdAt || rawMsg.created_at,
+        users: rawMsg.sender || rawMsg.users,
+      };
       setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg]);
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       setConversations(prev => prev.map(c =>
@@ -111,17 +121,7 @@ export function HeadMessages() {
     if (!message.trim() || !selectedConv) return;
     sendSocketMessage(selectedConv.id, message.trim());
 
-    const optimistic: ChatMessage = {
-      id: Date.now(),
-      conversation_id: selectedConv.id,
-      sender_id: myUserId,
-      content: message.trim(),
-      created_at: new Date().toISOString(),
-      users: { id: myUserId, username: user?.username || '', full_name: (user as any)?.fullName || user?.username || '' },
-    };
-    setMessages(prev => [...prev, optimistic]);
     setMessage('');
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
     if (isTypingRef.current) {
       stopTyping(selectedConv.id);
@@ -272,7 +272,7 @@ export function HeadMessages() {
                 ) : (
                   <div className="space-y-3">
                     {messages.map(msg => {
-                      const isOwn = msg.sender_id === myUserId;
+                      const isOwn = Number(msg.sender_id) === Number(myUserId);
                       return (
                         <div key={msg.id} className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : ''}`}>
                           {!isOwn && (

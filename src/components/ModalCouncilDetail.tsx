@@ -76,7 +76,9 @@ export function ModalCouncilDetail({ isOpen, onClose, council }: ModalCouncilDet
                     <Calendar className="w-4 h-4 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Ngày bảo vệ</p>
-                      <p className="font-medium">{council.defense_date}</p>
+                      <p className="font-medium">
+                        {council.defense_date ? new Date(council.defense_date).toLocaleDateString('vi-VN') : ''}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -94,7 +96,9 @@ export function ModalCouncilDetail({ isOpen, onClose, council }: ModalCouncilDet
                     <Clock className="w-4 h-4 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Giờ bắt đầu</p>
-                      <p className="font-medium">{council.start_time}</p>
+                      <p className="font-medium">
+                        {council.start_time ? new Date(council.start_time).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit', timeZone: 'UTC'}) : ''}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -103,7 +107,9 @@ export function ModalCouncilDetail({ isOpen, onClose, council }: ModalCouncilDet
                     <Clock className="w-4 h-4 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Giờ kết thúc</p>
-                      <p className="font-medium">{council.end_time}</p>
+                      <p className="font-medium">
+                        {council.end_time ? new Date(council.end_time).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit', timeZone: 'UTC'}) : ''}
+                      </p>
                     </div>
                   </div>
                 )}

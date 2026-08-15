@@ -73,9 +73,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const storedToken = authService.getToken();
     
     if (storedUser && storedToken) {
-      // Normalize role to lowercase
+      // Normalize role to lowercase and map full_name
       const normalizedUser = {
         ...storedUser,
+        fullName: (storedUser as any).full_name || (storedUser as any).fullName || storedUser.username,
         role: storedUser.role.toLowerCase() as UserRole
       };
       setUser(normalizedUser);
@@ -89,8 +90,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log('User role:', response.user?.role);
     
     // Convert role to lowercase to handle backend returning uppercase roles
+    // Map full_name to fullName
     const normalizedUser = response.user ? {
       ...response.user,
+      fullName: (response.user as any).full_name || (response.user as any).fullName || response.user.username,
       role: response.user.role.toLowerCase() as UserRole
     } : null;
     

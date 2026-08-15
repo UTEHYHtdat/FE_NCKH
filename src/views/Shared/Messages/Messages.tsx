@@ -13,7 +13,9 @@ import {
 
 // Helper format thời gian tin nhắn
 function formatTime(dateStr: string): string {
+  if (!dateStr) return '';
   const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
   return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 }
 
@@ -57,7 +59,16 @@ export function Messages() {
 
     const socket = connectSocket(token);
 
-    socket.on('newMessage', (msg: ChatMessage) => {
+    socket.on('newMessage', (rawMsg: any) => {
+      const msg: ChatMessage = {
+        id: rawMsg.id,
+        conversation_id: rawMsg.conversationId || rawMsg.conversation_id,
+        sender_id: rawMsg.sender?.id || rawMsg.sender_id,
+        content: rawMsg.content,
+        created_at: rawMsg.createdAt || rawMsg.created_at,
+        users: rawMsg.sender || rawMsg.users,
+      };
+
       setMessages(prev => {
         // Tránh duplicate
         if (prev.some(m => m.id === msg.id)) return prev;
@@ -147,18 +158,7 @@ export function Messages() {
     if (!message.trim() || !selectedConv) return;
     sendSocketMessage(selectedConv.id, message.trim());
 
-    // Optimistic update — hiển thị tin nhắn ngay trước khi nhận lại từ server
-    const optimistic: ChatMessage = {
-      id: Date.now(), // temp id
-      conversation_id: selectedConv.id,
-      sender_id: myUserId,
-      content: message.trim(),
-      created_at: new Date().toISOString(),
-      users: { id: myUserId, username: user?.username || '', full_name: (user as any)?.fullName || user?.username || '' },
-    };
-    setMessages(prev => [...prev, optimistic]);
     setMessage('');
-    scrollToBottom();
 
     // Stop typing indicator
     if (isTypingRef.current) {
@@ -301,7 +301,7 @@ export function Messages() {
                 {loadingMessages ? (
                   <div className="text-center text-sm text-muted-foreground py-8">Đang tải tin nhắn...</div>
                 ) : messages.map((msg) => {
-                  const isOwn = msg.sender_id === myUserId;
+                  const isOwn = Number(msg.sender_id) === Number(myUserId);
                   return (
                     <div key={msg.id} className={cn('flex gap-2', isOwn && 'flex-row-reverse')}>
                       {!isOwn && (
