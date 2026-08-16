@@ -2034,48 +2034,57 @@ export interface ThesisRoundDetail {
 
 
 export interface DefenseAssignmentDetail {
-
   id: number;
-
   defense_council_id: number;
-
   thesis_id: number;
-
-  defense_order: number;
-
-  defense_time: string;
-
-  status: string;
-
+  defense_order?: number;
+  defense_time?: string;
+  status?: string;
   theses?: {
-
     id: number;
-
     thesis_code: string;
-
     topic_title: string;
-
+    topic_description?: string;
+    defense_score?: number;
     thesis_members?: ThesisMemberDetail[];
-
+    instructors?: {
+      id?: number;
+      instructor_code?: string;
+      users?: {
+        id?: number;
+        full_name?: string;
+        email?: string;
+      };
+    };
   };
-
+  defense_results?: Array<{
+    id: number;
+    defense_score?: number;
+    comments?: string;
+    suggestions?: string;
+    instructors?: {
+      id: number;
+      instructor_code: string;
+      users?: {
+        full_name: string;
+      };
+    };
+  }>;
 }
-
-
 
 export interface ThesisMemberDetail {
-
+  id?: number;
   students?: {
-
+    id?: number;
+    student_code?: string;
     users?: {
-
-      full_name: string;
-
+      id?: number;
+      full_name?: string;
+      email?: string;
     };
-
   };
-
 }
+
 
 
 
@@ -2490,6 +2499,36 @@ export interface CreateInstructorRequest {
   full_name: string;
 
   phone?: string;
+}
 
+export interface ReviewScheduleItemData {
+  id: number;
+  thesisId: number;
+  thesisCode: string;
+  thesisTitle: string;
+  groupName: string;
+  students: string[];
+  supervisor: string;
+  supervisorId?: number;
+  reviewer1: string;
+  reviewer1Id?: number;
+  reviewer2?: string;
+  reviewer2Id?: number;
+  scheduledDate: string;
+  scheduledTime: string;
+  location: string;
+  status: 'NOT_SCHEDULED' | 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | string;
+  hasSchedule?: boolean;
+  reviewScore1?: number;
+  reviewScore2?: number;
+  notes?: string;
+}
+
+export interface AutoScheduleReviewsRequest {
+  thesisRoundId: number;
+  scheduledDate: string;
+  location: string;
+  startHour?: number;
+  durationMinutes?: number;
 }
 

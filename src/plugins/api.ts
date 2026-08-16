@@ -2370,3 +2370,68 @@ export const topicService = {
   },
 };
 
+// --- reviewScheduleService.ts ---
+import type { ReviewScheduleItemData, AutoScheduleReviewsRequest } from '@/types/api';
+
+export const reviewScheduleService = {
+  /**
+   * Lấy danh sách lịch phản biện
+   * GET /api/admin/review-schedules
+   */
+  async getReviewSchedules(params?: {
+    thesis_round_id?: number;
+    status?: string;
+    search?: string;
+  }): Promise<ReviewScheduleItemData[]> {
+    const query = new URLSearchParams();
+    if (params?.thesis_round_id) query.append('thesisRoundId', params.thesis_round_id.toString());
+    if (params?.status) query.append('status', params.status);
+    if (params?.search) query.append('search', params.search);
+
+    const queryString = query.toString();
+    const res = await apiClient.get<any>(`/api/admin/review-schedules${queryString ? `?${queryString}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+
+  /**
+   * Lấy danh sách tất cả đề tài trong đợt để chọn xếp lịch
+   * GET /api/admin/review-schedules/theses
+   */
+  async getThesesByRound(thesisRoundId: number): Promise<any[]> {
+    const res = await apiClient.get<any>(`/api/admin/review-schedules/theses?thesisRoundId=${thesisRoundId}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+
+  /**
+   * Tạo danh sách lịch phản biện
+   * POST /api/admin/review-schedules
+   */
+  async createReviewSchedules(data: any[]): Promise<any> {
+    return apiClient.post('/api/admin/review-schedules', data);
+  },
+
+  /**
+   * Cập nhật lịch phản biện theo thesisId
+   * PUT /api/admin/review-schedules/:thesisId
+   */
+  async updateReviewSchedule(thesisId: number, data: any): Promise<any> {
+    return apiClient.put(`/api/admin/review-schedules/${thesisId}`, data);
+  },
+
+  /**
+   * Hủy lịch phản biện
+   * DELETE /api/admin/review-schedules/:thesisId
+   */
+  async deleteReviewSchedule(thesisId: number): Promise<any> {
+    return apiClient.delete(`/api/admin/review-schedules/${thesisId}`);
+  },
+
+  /**
+   * Xếp lịch phản biện tự động
+   * POST /api/admin/review-schedules/auto
+   */
+  async autoScheduleReviews(data: AutoScheduleReviewsRequest): Promise<any> {
+    return apiClient.post('/api/admin/review-schedules/auto', data);
+  },
+};
+

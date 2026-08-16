@@ -7,6 +7,7 @@ export const STATUS_TRANSLATION: Record<string, string> = {
   Cancelled: 'Đã hủy',
   
   // Councils & Schedules
+  NOT_SCHEDULED: 'Chưa xếp lịch',
   PREPARING: 'Chuẩn bị',
   SCHEDULED: 'Đã lên lịch',
   COMPLETED: 'Hoàn thành',
@@ -39,6 +40,7 @@ export const getStatusBadgeVariant = (status: string): "default" | "secondary" |
     case "Preparing":
     case "PREPARING":
     case "PENDING":
+    case "NOT_SCHEDULED":
       return "outline";
     case "CANCELLED":
     case "Cancelled":
