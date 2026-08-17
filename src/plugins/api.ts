@@ -847,50 +847,86 @@ import type {
 export const gradingService = {
   /**
    * Get supervision students (Instructor only)
-   * GET /api/supervision-students
+   * GET /api/v1/thesis/instructor/grading/supervision-students
    */
   async getSupervisionStudents(instructorId?: number, thesisRoundId?: number): Promise<SupervisionStudent[]> {
     const params = new URLSearchParams();
-    if (instructorId) params.append('instructor_id', instructorId.toString());
-    if (thesisRoundId) params.append('thesis_round_id', thesisRoundId.toString());
+    if (instructorId) params.append('instructorId', instructorId.toString());
+    if (thesisRoundId) params.append('thesisRoundId', thesisRoundId.toString());
     const queryString = params.toString();
-    return apiClient.get<SupervisionStudent[]>(`/api/supervision-students${queryString ? `?${queryString}` : ''}`);
+    return apiClient.get<SupervisionStudent[]>(`/api/v1/thesis/instructor/grading/supervision-students${queryString ? `?${queryString}` : ''}`);
   },
 
   /**
    * Get review students (Instructor only)
-   * GET /api/review-students
+   * GET /api/v1/thesis/instructor/grading/review-students
    */
   async getReviewStudents(instructorId?: number, thesisRoundId?: number): Promise<ReviewStudent[]> {
     const params = new URLSearchParams();
-    if (instructorId) params.append('instructor_id', instructorId.toString());
-    if (thesisRoundId) params.append('thesis_round_id', thesisRoundId.toString());
+    if (instructorId) params.append('instructorId', instructorId.toString());
+    if (thesisRoundId) params.append('thesisRoundId', thesisRoundId.toString());
     const queryString = params.toString();
-    return apiClient.get<ReviewStudent[]>(`/api/review-students${queryString ? `?${queryString}` : ''}`);
+    return apiClient.get<ReviewStudent[]>(`/api/v1/thesis/instructor/grading/review-students${queryString ? `?${queryString}` : ''}`);
+  },
+
+  /**
+   * Get defense council students/theses assigned to this instructor
+   * GET /api/v1/thesis/instructor/defense/assigned-theses
+   */
+  async getDefenseStudents(thesisRoundId?: number): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (thesisRoundId) params.append('thesisRoundId', thesisRoundId.toString());
+    const queryString = params.toString();
+    return apiClient.get<any[]>(`/api/v1/thesis/instructor/defense/assigned-theses${queryString ? `?${queryString}` : ''}`);
+  },
+
+  /**
+   * Get grading templates configured by Head
+   * GET /api/v1/thesis/admin/grading-templates
+   */
+  async getGradingTemplates(type?: string): Promise<any[]> {
+    const endpoint = `/api/v1/thesis/admin/grading-templates${type ? `?type=${type}` : ''}`;
+    return apiClient.get<any[]>(endpoint);
+  },
+
+  /**
+   * Get student's own thesis scores (all 4 parts)
+   * GET /api/v1/thesis/student/grading/my-scores
+   */
+  async getStudentMyScores(): Promise<any> {
+    return apiClient.get<any>('/api/v1/thesis/student/grading/my-scores');
   },
 
   /**
    * Submit supervision comment (Instructor only)
-   * POST /api/supervision-comments
+   * POST /api/v1/thesis/instructor/grading/supervision-comments
    */
-  async submitSupervisionComment(data: SupervisionCommentRequest): Promise<SupervisionCommentResponse> {
-    return apiClient.post<SupervisionCommentResponse>('/api/supervision-comments', data);
+  async submitSupervisionComment(data: any): Promise<any> {
+    return apiClient.post<any>('/api/v1/thesis/instructor/grading/supervision-comments', data);
   },
 
   /**
    * Submit review result (Instructor only)
-   * POST /api/review-results
+   * POST /api/v1/thesis/instructor/grading/review-results
    */
-  async submitReviewResult(data: ReviewResultRequest): Promise<ReviewResultResponse> {
-    return apiClient.post<ReviewResultResponse>('/api/review-results', data);
+  async submitReviewResult(data: any): Promise<any> {
+    return apiClient.post<any>('/api/v1/thesis/instructor/grading/review-results', data);
+  },
+
+  /**
+   * Submit defense result (Instructor only)
+   * POST /api/v1/thesis/instructor/defense/results
+   */
+  async submitDefenseResult(data: any): Promise<any> {
+    return apiClient.post<any>('/api/v1/thesis/instructor/defense/results', data);
   },
 
   /**
    * Get thesis scores
-   * GET /api/thesis-scores/:thesisId
+   * GET /api/v1/thesis/student/grading/thesis-scores/:thesisId
    */
   async getThesisScores(thesisId: number): Promise<ThesisScoresResponse> {
-    return apiClient.get<ThesisScoresResponse>(`/api/thesis-scores/${thesisId}`);
+    return apiClient.get<ThesisScoresResponse>(`/api/v1/thesis/student/grading/thesis-scores/${thesisId}`);
   },
 
   /**
@@ -908,6 +944,7 @@ export const gradingService = {
   async createReviewAssignment(data: CreateReviewAssignmentRequest): Promise<ReviewAssignment> {
     return apiClient.post<ReviewAssignment>('/api/review-assignments', data);
   },
+
 
   /**
    * Submit a review result (Instructor only) - legacy
