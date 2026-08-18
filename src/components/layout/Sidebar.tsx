@@ -1,4 +1,8 @@
-import { Home, FileText, Users, ClipboardList, MessageSquare, Settings, BookOpen, CheckSquare, Shield, UserPlus, GraduationCap, Clock, Library } from 'lucide-react';
+import { 
+  Home, FileText, Users, ClipboardList, MessageSquare, Settings, 
+  BookOpen, CheckSquare, Shield, UserPlus, GraduationCap, Clock, 
+  Library, Bell, FileCheck, BookmarkCheck, HelpCircle, LifeBuoy, AlertCircle 
+} from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { cn } from '@/utils/cn';
 
@@ -11,31 +15,47 @@ interface SidebarProps {
 const menuItems = {
   student: [
     { icon: Home, label: 'Dashboard', path: '/dashboard' },
+    { icon: Bell, label: 'Bảng tin', path: '/announcements' },
     { icon: Clock, label: 'Timeline', path: '/timeline' },
     { icon: Users, label: 'Nhóm của tôi', path: '/groups' },
     { icon: FileText, label: 'Đề tài', path: '/topic-registration' },
     { icon: ClipboardList, label: 'Báo cáo tuần', path: '/reports' },
     { icon: BookOpen, label: 'Điểm số', path: '/scores' },
+    { icon: LifeBuoy, label: 'Yêu cầu học vụ', path: '/requests' },
+    { icon: FileCheck, label: 'Kho biểu mẫu', path: '/documents' },
+    { icon: BookmarkCheck, label: 'Thư viện số', path: '/repository' },
+    { icon: HelpCircle, label: 'Khảo sát', path: '/surveys' },
     { icon: Library, label: 'Khóa học', path: '/courses' },
     { icon: MessageSquare, label: 'Tin nhắn', path: '/messages' },
   ],
   instructor: [
     { icon: Home, label: 'Dashboard', path: '/dashboard' },
+    { icon: Bell, label: 'Bảng tin', path: '/announcements' },
     { icon: FileText, label: 'Đề tài của tôi', path: '/my-topics' },
     { icon: Users, label: 'Sinh viên hướng dẫn', path: '/students' },
     { icon: GraduationCap, label: 'Chấm điểm', path: '/grading' },
+    { icon: AlertCircle, label: 'Chấm phúc khảo', path: '/grade-reviews' },
     { icon: ClipboardList, label: 'Báo cáo', path: '/reports' },
     { icon: CheckSquare, label: 'Lịch phản biện', path: '/reviews' },
+    { icon: FileCheck, label: 'Kho biểu mẫu', path: '/documents' },
+    { icon: BookmarkCheck, label: 'Thư viện số', path: '/repository' },
+    { icon: HelpCircle, label: 'Khảo sát', path: '/surveys' },
     { icon: Library, label: 'Khóa học', path: '/instructor-courses' },
     { icon: MessageSquare, label: 'Tin nhắn', path: '/messages' },
   ],
   head: [
     { icon: Home, label: 'Dashboard', path: '/dashboard' },
+    { icon: Bell, label: 'Bảng tin', path: '/announcements' },
     { icon: BookOpen, label: 'Đợt khóa luận', path: '/rounds' },
     { icon: UserPlus, label: 'Phân công giáo viên', path: '/assign-instructors' },
     { icon: FileText, label: 'Duyệt đề tài', path: '/approve-topics' },
     { icon: Clock, label: 'Lịch phản biện', path: '/review-schedule' },
     { icon: Shield, label: 'Hội đồng', path: '/councils' },
+    { icon: AlertCircle, label: 'Duyệt phúc khảo', path: '/grade-reviews' },
+    { icon: LifeBuoy, label: 'Yêu cầu học vụ', path: '/requests' },
+    { icon: HelpCircle, label: 'Khảo sát chất lượng', path: '/surveys' },
+    { icon: FileCheck, label: 'Kho biểu mẫu', path: '/documents' },
+    { icon: BookmarkCheck, label: 'Thư viện số', path: '/repository' },
     { icon: FileText, label: 'Tạo form mẫu', path: '/grading-templates' },
     { icon: Library, label: 'Quản lý khóa học', path: '/manage-courses' },
     { icon: ClipboardList, label: 'Báo cáo', path: '/reports' },
@@ -43,8 +63,11 @@ const menuItems = {
   ],
   admin: [
     { icon: Home, label: 'Dashboard', path: '/dashboard' },
+    { icon: Bell, label: 'Quản lý thông báo', path: '/admin/announcements' },
     { icon: Shield, label: 'Tổ chức', path: '/organization' },
     { icon: Users, label: 'Người dùng', path: '/users' },
+    { icon: FileCheck, label: 'Kho biểu mẫu', path: '/documents' },
+    { icon: BookmarkCheck, label: 'Thư viện số', path: '/repository' },
     { icon: Settings, label: 'Cấu hình hệ thống', path: '/settings' },
   ],
 };
@@ -71,7 +94,7 @@ export function Sidebar({ userRole = 'student', userName = 'Nguyễn Văn A', us
       </Link>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;

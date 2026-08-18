@@ -33,6 +33,20 @@ import { Courses } from '@/views/Student/Courses/Courses';
 import { InstructorCourse } from '@/views/Instructor/Courses/InstructorCourse';
 import { ManageCourses } from '@/views/Head/ManageCourses/ManageCourses';
 
+// 6 New Integrated Modules
+import { OfficialDocuments } from '@/views/Shared/Documents/OfficialDocuments';
+import { DigitalRepository } from '@/views/Shared/Repository/DigitalRepository';
+import { AnnouncementsFeed } from '@/views/Shared/Announcements/AnnouncementsFeed';
+import { AnnouncementDetail } from '@/views/Shared/Announcements/AnnouncementDetail';
+import { AdminAnnouncements } from '@/views/Admin/Announcements/AdminAnnouncements';
+import { StudentAcademicRequests } from '@/views/Student/Requests/StudentAcademicRequests';
+import { HeadAcademicRequests } from '@/views/Head/Requests/HeadAcademicRequests';
+import { HeadGradeReviews } from '@/views/Head/GradeReviews/HeadGradeReviews';
+import { InstructorGradeReviews } from '@/views/Instructor/GradeReviews/InstructorGradeReviews';
+import { SurveysList } from '@/views/Shared/Surveys/SurveysList';
+import { HeadSurveys } from '@/views/Head/Surveys/HeadSurveys';
+
+
 
 export function ProtectedRoute({ 
   children, 
@@ -58,36 +72,50 @@ export function AppRoutes() {
 
   if (isLoading) return <div>Loading...</div>;
 
-  const userRole = user?.role || 'student';
+  const role = (user?.role || 'student').toLowerCase();
+  const isStudent = role === 'student';
+  const isInstructor = role === 'instructor';
+  const isHead = role === 'head' || role === 'department_head';
+  const isAdmin = role === 'admin';
 
   return (
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
-      <Route path="/dashboard" element={<ProtectedRoute>{userRole === 'student' && <StudentDashboard />}{userRole === 'instructor' && <InstructorDashboard />}{(userRole === 'head' || userRole === 'department_head') && <HeadDashboard />}{userRole === 'admin' && <AdminDashboard />}</ProtectedRoute>} />
-      <Route path="/groups" element={<ProtectedRoute>{userRole === 'student' && <GroupManagement />}</ProtectedRoute>} />
-      <Route path="/topic-registration" element={<ProtectedRoute>{userRole === 'student' && <TopicRegistration />}</ProtectedRoute>} />
-      <Route path="/timeline" element={<ProtectedRoute>{userRole === 'student' && <TimelinePage />}</ProtectedRoute>} />
-      <Route path="/rounds" element={<ProtectedRoute>{(userRole === 'head' || userRole === 'department_head') && <ThesisRounds />}</ProtectedRoute>} />
-      <Route path="/assign-instructors" element={<ProtectedRoute>{(userRole === 'head' || userRole === 'department_head') && <HeadAssignInstructors />}</ProtectedRoute>} />
-      <Route path="/assign-reviewers" element={<ProtectedRoute>{(userRole === 'head' || userRole === 'department_head') && <HeadAssignReviewers />}</ProtectedRoute>} />
-      <Route path="/review-schedule" element={<ProtectedRoute>{(userRole === 'head' || userRole === 'department_head') && <HeadReviewSchedule />}</ProtectedRoute>} />
-      <Route path="/grading-templates" element={<ProtectedRoute>{(userRole === 'head' || userRole === 'department_head' || userRole === 'admin') && <HeadGradingTemplates />}</ProtectedRoute>} />
-      <Route path="/messages" element={<ProtectedRoute>{userRole === 'student' && <Messages />}{(userRole === 'head' || userRole === 'department_head') && <HeadMessages />}{userRole === 'instructor' && <Messages />}</ProtectedRoute>} />
-      <Route path="/reports" element={<ProtectedRoute>{userRole === 'student' && <WeeklyReports />}{userRole === 'instructor' && <InstructorAllReports />}{(userRole === 'head' || userRole === 'department_head') && <HeadReports />}</ProtectedRoute>} />
-      <Route path="/scores" element={<ProtectedRoute>{userRole === 'student' && <Scores />}</ProtectedRoute>} />
-      <Route path="/courses" element={<ProtectedRoute>{userRole === 'student' && <Courses />}</ProtectedRoute>} />
-      <Route path="/my-topics" element={<ProtectedRoute>{userRole === 'instructor' && <MyTopics />}</ProtectedRoute>} />
-      <Route path="/students" element={<ProtectedRoute>{userRole === 'instructor' && <MyStudents />}</ProtectedRoute>} />
-      <Route path="/students/:thesisId/reports" element={<ProtectedRoute>{userRole === 'instructor' && <InstructorReports />}</ProtectedRoute>} />
-      <Route path="/reviews" element={<ProtectedRoute>{userRole === 'instructor' && <ReviewSchedule />}</ProtectedRoute>} />
-      <Route path="/grading" element={<ProtectedRoute>{userRole === 'instructor' && <InstructorGrading />}</ProtectedRoute>} />
-      <Route path="/instructor-courses" element={<ProtectedRoute>{userRole === 'instructor' && <InstructorCourse />}</ProtectedRoute>} />
-      <Route path="/approve-topics" element={<ProtectedRoute>{(userRole === 'head' || userRole === 'department_head') && <HeadApproveTopics />}</ProtectedRoute>} />
-      <Route path="/councils" element={<ProtectedRoute>{(userRole === 'head' || userRole === 'department_head') && <DefenseCouncils />}</ProtectedRoute>} />
-      <Route path="/manage-courses" element={<ProtectedRoute>{(userRole === 'head' || userRole === 'department_head') && <ManageCourses />}</ProtectedRoute>} />
-      <Route path="/organization" element={<ProtectedRoute>{userRole === 'admin' && <AdminOrganizationManagement />}</ProtectedRoute>} />
-      <Route path="/users" element={<ProtectedRoute>{userRole === 'admin' && <AdminUserManagement />}</ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute>{userRole === 'admin' && <SystemSettings />}</ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute>{isStudent && <StudentDashboard />}{isInstructor && <InstructorDashboard />}{isHead && <HeadDashboard />}{isAdmin && <AdminDashboard />}</ProtectedRoute>} />
+      <Route path="/groups" element={<ProtectedRoute>{isStudent && <GroupManagement />}</ProtectedRoute>} />
+      <Route path="/topic-registration" element={<ProtectedRoute>{isStudent && <TopicRegistration />}</ProtectedRoute>} />
+      <Route path="/timeline" element={<ProtectedRoute>{isStudent && <TimelinePage />}</ProtectedRoute>} />
+      <Route path="/rounds" element={<ProtectedRoute>{(isHead || isAdmin) && <ThesisRounds />}</ProtectedRoute>} />
+      <Route path="/assign-instructors" element={<ProtectedRoute>{(isHead || isAdmin) && <HeadAssignInstructors />}</ProtectedRoute>} />
+      <Route path="/assign-reviewers" element={<ProtectedRoute>{(isHead || isAdmin) && <HeadAssignReviewers />}</ProtectedRoute>} />
+      <Route path="/review-schedule" element={<ProtectedRoute>{(isHead || isAdmin) && <HeadReviewSchedule />}</ProtectedRoute>} />
+      <Route path="/grading-templates" element={<ProtectedRoute>{(isHead || isAdmin) && <HeadGradingTemplates />}</ProtectedRoute>} />
+      <Route path="/messages" element={<ProtectedRoute>{isStudent && <Messages />}{isHead && <HeadMessages />}{isInstructor && <Messages />}{isAdmin && <HeadMessages />}</ProtectedRoute>} />
+      <Route path="/reports" element={<ProtectedRoute>{isStudent && <WeeklyReports />}{isInstructor && <InstructorAllReports />}{(isHead || isAdmin) && <HeadReports />}</ProtectedRoute>} />
+      <Route path="/scores" element={<ProtectedRoute>{isStudent && <Scores />}</ProtectedRoute>} />
+      <Route path="/courses" element={<ProtectedRoute>{isStudent && <Courses />}</ProtectedRoute>} />
+      <Route path="/my-topics" element={<ProtectedRoute>{isInstructor && <MyTopics />}</ProtectedRoute>} />
+      <Route path="/students" element={<ProtectedRoute>{isInstructor && <MyStudents />}</ProtectedRoute>} />
+      <Route path="/students/:thesisId/reports" element={<ProtectedRoute>{isInstructor && <InstructorReports />}</ProtectedRoute>} />
+      <Route path="/reviews" element={<ProtectedRoute>{isInstructor && <ReviewSchedule />}</ProtectedRoute>} />
+      <Route path="/grading" element={<ProtectedRoute>{isInstructor && <InstructorGrading />}</ProtectedRoute>} />
+      <Route path="/instructor-courses" element={<ProtectedRoute>{isInstructor && <InstructorCourse />}</ProtectedRoute>} />
+      <Route path="/approve-topics" element={<ProtectedRoute>{(isHead || isAdmin) && <HeadApproveTopics />}</ProtectedRoute>} />
+      <Route path="/councils" element={<ProtectedRoute>{(isHead || isAdmin) && <DefenseCouncils />}</ProtectedRoute>} />
+      <Route path="/manage-courses" element={<ProtectedRoute>{(isHead || isAdmin) && <ManageCourses />}</ProtectedRoute>} />
+      <Route path="/organization" element={<ProtectedRoute>{isAdmin && <AdminOrganizationManagement />}</ProtectedRoute>} />
+      <Route path="/users" element={<ProtectedRoute>{isAdmin && <AdminUserManagement />}</ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute>{isAdmin && <SystemSettings />}</ProtectedRoute>} />
+
+      {/* 6 New Module Routes */}
+      <Route path="/documents" element={<ProtectedRoute><OfficialDocuments /></ProtectedRoute>} />
+      <Route path="/repository" element={<ProtectedRoute><DigitalRepository /></ProtectedRoute>} />
+      <Route path="/announcements" element={<ProtectedRoute><AnnouncementsFeed /></ProtectedRoute>} />
+      <Route path="/announcements/:id" element={<ProtectedRoute><AnnouncementDetail /></ProtectedRoute>} />
+      <Route path="/admin/announcements" element={<ProtectedRoute>{(isHead || isAdmin) && <AdminAnnouncements />}</ProtectedRoute>} />
+      <Route path="/requests" element={<ProtectedRoute>{isStudent ? <StudentAcademicRequests /> : <HeadAcademicRequests />}</ProtectedRoute>} />
+      <Route path="/grade-reviews" element={<ProtectedRoute>{(isHead || isAdmin) ? <HeadGradeReviews /> : isInstructor ? <InstructorGradeReviews /> : <Scores />}</ProtectedRoute>} />
+      <Route path="/surveys" element={<ProtectedRoute>{(isHead || isAdmin) ? <HeadSurveys /> : <SurveysList />}</ProtectedRoute>} />
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

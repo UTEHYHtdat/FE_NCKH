@@ -847,50 +847,86 @@ import type {
 export const gradingService = {
   /**
    * Get supervision students (Instructor only)
-   * GET /api/supervision-students
+   * GET /api/v1/thesis/instructor/grading/supervision-students
    */
   async getSupervisionStudents(instructorId?: number, thesisRoundId?: number): Promise<SupervisionStudent[]> {
     const params = new URLSearchParams();
-    if (instructorId) params.append('instructor_id', instructorId.toString());
-    if (thesisRoundId) params.append('thesis_round_id', thesisRoundId.toString());
+    if (instructorId) params.append('instructorId', instructorId.toString());
+    if (thesisRoundId) params.append('thesisRoundId', thesisRoundId.toString());
     const queryString = params.toString();
-    return apiClient.get<SupervisionStudent[]>(`/api/supervision-students${queryString ? `?${queryString}` : ''}`);
+    return apiClient.get<SupervisionStudent[]>(`/api/v1/thesis/instructor/grading/supervision-students${queryString ? `?${queryString}` : ''}`);
   },
 
   /**
    * Get review students (Instructor only)
-   * GET /api/review-students
+   * GET /api/v1/thesis/instructor/grading/review-students
    */
   async getReviewStudents(instructorId?: number, thesisRoundId?: number): Promise<ReviewStudent[]> {
     const params = new URLSearchParams();
-    if (instructorId) params.append('instructor_id', instructorId.toString());
-    if (thesisRoundId) params.append('thesis_round_id', thesisRoundId.toString());
+    if (instructorId) params.append('instructorId', instructorId.toString());
+    if (thesisRoundId) params.append('thesisRoundId', thesisRoundId.toString());
     const queryString = params.toString();
-    return apiClient.get<ReviewStudent[]>(`/api/review-students${queryString ? `?${queryString}` : ''}`);
+    return apiClient.get<ReviewStudent[]>(`/api/v1/thesis/instructor/grading/review-students${queryString ? `?${queryString}` : ''}`);
+  },
+
+  /**
+   * Get defense council students/theses assigned to this instructor
+   * GET /api/v1/thesis/instructor/defense/assigned-theses
+   */
+  async getDefenseStudents(thesisRoundId?: number): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (thesisRoundId) params.append('thesisRoundId', thesisRoundId.toString());
+    const queryString = params.toString();
+    return apiClient.get<any[]>(`/api/v1/thesis/instructor/defense/assigned-theses${queryString ? `?${queryString}` : ''}`);
+  },
+
+  /**
+   * Get grading templates configured by Head
+   * GET /api/v1/thesis/admin/grading-templates
+   */
+  async getGradingTemplates(type?: string): Promise<any[]> {
+    const endpoint = `/api/v1/thesis/admin/grading-templates${type ? `?type=${type}` : ''}`;
+    return apiClient.get<any[]>(endpoint);
+  },
+
+  /**
+   * Get student's own thesis scores (all 4 parts)
+   * GET /api/v1/thesis/student/grading/my-scores
+   */
+  async getStudentMyScores(): Promise<any> {
+    return apiClient.get<any>('/api/v1/thesis/student/grading/my-scores');
   },
 
   /**
    * Submit supervision comment (Instructor only)
-   * POST /api/supervision-comments
+   * POST /api/v1/thesis/instructor/grading/supervision-comments
    */
-  async submitSupervisionComment(data: SupervisionCommentRequest): Promise<SupervisionCommentResponse> {
-    return apiClient.post<SupervisionCommentResponse>('/api/supervision-comments', data);
+  async submitSupervisionComment(data: any): Promise<any> {
+    return apiClient.post<any>('/api/v1/thesis/instructor/grading/supervision-comments', data);
   },
 
   /**
    * Submit review result (Instructor only)
-   * POST /api/review-results
+   * POST /api/v1/thesis/instructor/grading/review-results
    */
-  async submitReviewResult(data: ReviewResultRequest): Promise<ReviewResultResponse> {
-    return apiClient.post<ReviewResultResponse>('/api/review-results', data);
+  async submitReviewResult(data: any): Promise<any> {
+    return apiClient.post<any>('/api/v1/thesis/instructor/grading/review-results', data);
+  },
+
+  /**
+   * Submit defense result (Instructor only)
+   * POST /api/v1/thesis/instructor/defense/results
+   */
+  async submitDefenseResult(data: any): Promise<any> {
+    return apiClient.post<any>('/api/v1/thesis/instructor/defense/results', data);
   },
 
   /**
    * Get thesis scores
-   * GET /api/thesis-scores/:thesisId
+   * GET /api/v1/thesis/student/grading/thesis-scores/:thesisId
    */
   async getThesisScores(thesisId: number): Promise<ThesisScoresResponse> {
-    return apiClient.get<ThesisScoresResponse>(`/api/thesis-scores/${thesisId}`);
+    return apiClient.get<ThesisScoresResponse>(`/api/v1/thesis/student/grading/thesis-scores/${thesisId}`);
   },
 
   /**
@@ -908,6 +944,7 @@ export const gradingService = {
   async createReviewAssignment(data: CreateReviewAssignmentRequest): Promise<ReviewAssignment> {
     return apiClient.post<ReviewAssignment>('/api/review-assignments', data);
   },
+
 
   /**
    * Submit a review result (Instructor only) - legacy
@@ -2016,6 +2053,9 @@ export const thesisRoundsService = {
   },
 };
 
+export const thesisRoundService = thesisRoundsService;
+
+
 
 // --- thesisService.ts ---
 
@@ -2369,4 +2409,219 @@ export const topicService = {
     );
   },
 };
+
+// --- reviewScheduleService.ts ---
+import type { ReviewScheduleItemData, AutoScheduleReviewsRequest } from '@/types/api';
+
+export const reviewScheduleService = {
+  /**
+   * Lấy danh sách lịch phản biện
+   * GET /api/admin/review-schedules
+   */
+  async getReviewSchedules(params?: {
+    thesis_round_id?: number;
+    status?: string;
+    search?: string;
+  }): Promise<ReviewScheduleItemData[]> {
+    const query = new URLSearchParams();
+    if (params?.thesis_round_id) query.append('thesisRoundId', params.thesis_round_id.toString());
+    if (params?.status) query.append('status', params.status);
+    if (params?.search) query.append('search', params.search);
+
+    const queryString = query.toString();
+    const res = await apiClient.get<any>(`/api/admin/review-schedules${queryString ? `?${queryString}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+
+  /**
+   * Lấy danh sách tất cả đề tài trong đợt để chọn xếp lịch
+   * GET /api/admin/review-schedules/theses
+   */
+  async getThesesByRound(thesisRoundId: number): Promise<any[]> {
+    const res = await apiClient.get<any>(`/api/admin/review-schedules/theses?thesisRoundId=${thesisRoundId}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+
+  /**
+   * Tạo danh sách lịch phản biện
+   * POST /api/admin/review-schedules
+   */
+  async createReviewSchedules(data: any[]): Promise<any> {
+    return apiClient.post('/api/admin/review-schedules', data);
+  },
+
+  /**
+   * Cập nhật lịch phản biện theo thesisId
+   * PUT /api/admin/review-schedules/:thesisId
+   */
+  async updateReviewSchedule(thesisId: number, data: any): Promise<any> {
+    return apiClient.put(`/api/admin/review-schedules/${thesisId}`, data);
+  },
+
+  /**
+   * Hủy lịch phản biện
+   * DELETE /api/admin/review-schedules/:thesisId
+   */
+  async deleteReviewSchedule(thesisId: number): Promise<any> {
+    return apiClient.delete(`/api/admin/review-schedules/${thesisId}`);
+  },
+
+  /**
+   * Xếp lịch phản biện tự động
+   * POST /api/admin/review-schedules/auto
+   */
+  async autoScheduleReviews(data: AutoScheduleReviewsRequest): Promise<any> {
+    return apiClient.post('/api/admin/review-schedules/auto', data);
+  },
+};
+
+// ─── 1. Grade Review Service ────────────────────────────────────────────────
+export const gradeReviewService = {
+  async createReview(data: FormData | any) {
+    return apiClient.post('/api/v1/thesis/student/grade-reviews', data);
+  },
+  async getStudentReviews() {
+    const res = await apiClient.get<any>('/api/v1/thesis/student/grade-reviews');
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async getAdminReviews(params?: any) {
+    const query = new URLSearchParams(params).toString();
+    const res = await apiClient.get<any>(`/api/v1/thesis/admin/grade-reviews${query ? `?${query}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async assignInstructor(id: number, instructorId: number) {
+    return apiClient.put(`/api/v1/thesis/admin/grade-reviews/${id}/assign`, { instructor_id: instructorId });
+  },
+  async getInstructorReviews() {
+    const res = await apiClient.get<any>('/api/v1/thesis/instructor/grade-reviews');
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async reassessReview(id: number, data: { reassessed_score: number; reassessment_notes: string }) {
+    return apiClient.put(`/api/v1/thesis/instructor/grade-reviews/${id}/reassess`, data);
+  },
+  async resolveReview(id: number, data: { status: string; head_feedback?: string; apply_score?: boolean }) {
+    return apiClient.put(`/api/v1/thesis/admin/grade-reviews/${id}/resolve`, data);
+  }
+};
+
+// ─── 2. Document & Repository Service ───────────────────────────────────────
+export const documentService = {
+  async getDocuments(params?: any) {
+    const query = new URLSearchParams(params).toString();
+    const res = await apiClient.get<any>(`/api/v1/thesis/documents${query ? `?${query}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async createDocument(data: FormData | any) {
+    return apiClient.post('/api/v1/thesis/documents', data);
+  },
+  async downloadDocument(id: number) {
+    return apiClient.get(`/api/v1/thesis/documents/${id}/download`);
+  },
+  async deleteDocument(id: number) {
+    return apiClient.delete(`/api/v1/thesis/documents/${id}`);
+  },
+  async getRepository(params?: any) {
+    const query = new URLSearchParams(params).toString();
+    const res = await apiClient.get<any>(`/api/v1/thesis/documents/repository${query ? `?${query}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async getRepositoryById(id: number) {
+    const res = await apiClient.get<any>(`/api/v1/thesis/documents/repository/${id}`);
+    return res?.data || res;
+  },
+  async publishThesis(thesisId: number) {
+    return apiClient.post(`/api/v1/thesis/documents/repository/publish/${thesisId}`);
+  }
+};
+
+// ─── 3. Excel Batch Service ────────────────────────────────────────────────
+export const excelBatchService = {
+  async importStudents(formData: FormData) {
+    return apiClient.post('/api/v1/thesis/excel/import/students', formData);
+  },
+  async importProposedTopics(formData: FormData) {
+    return apiClient.post('/api/v1/thesis/excel/import/proposed-topics', formData);
+  },
+  getScoresExportUrl(thesisRoundId?: number | string) {
+    const base = import.meta.env.VITE_API_BASE_URL || '';
+    return `${base}/api/v1/thesis/excel/export/scores?thesis_round_id=${thesisRoundId || 'all'}`;
+  },
+  getDefenseScheduleExportUrl(thesisRoundId?: number | string) {
+    const base = import.meta.env.VITE_API_BASE_URL || '';
+    return `${base}/api/v1/thesis/excel/export/defense-schedule?thesis_round_id=${thesisRoundId || 'all'}`;
+  }
+};
+
+// ─── 4. Survey Service ──────────────────────────────────────────────────────
+export const surveyService = {
+  async getActiveSurveys() {
+    const res = await apiClient.get<any>('/api/v1/thesis/surveys/active');
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async getSurveyById(id: number) {
+    const res = await apiClient.get<any>(`/api/v1/thesis/surveys/${id}`);
+    return res?.data || res;
+  },
+  async submitSurvey(id: number, data: any) {
+    return apiClient.post(`/api/v1/thesis/surveys/${id}/submit`, data);
+  },
+  async getAdminSurveys(params?: any) {
+    const query = new URLSearchParams(params).toString();
+    const res = await apiClient.get<any>(`/api/v1/thesis/surveys/admin/list${query ? `?${query}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async createSurvey(data: any) {
+    return apiClient.post('/api/v1/thesis/surveys/admin/create', data);
+  },
+  async getSurveyAnalytics(id: number) {
+    const res = await apiClient.get<any>(`/api/v1/thesis/surveys/admin/${id}/analytics`);
+    return res?.data || res;
+  }
+};
+
+// ─── 5. Academic Ticket Service ─────────────────────────────────────────────
+export const academicTicketService = {
+  async createTicket(data: FormData | any) {
+    return apiClient.post('/api/v1/thesis/student/tickets', data);
+  },
+  async getStudentTickets() {
+    const res = await apiClient.get<any>('/api/v1/thesis/student/tickets');
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async getAdminTickets(params?: any) {
+    const query = new URLSearchParams(params).toString();
+    const res = await apiClient.get<any>(`/api/v1/thesis/admin/tickets${query ? `?${query}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async getTicketById(id: number) {
+    const res = await apiClient.get<any>(`/api/v1/thesis/admin/tickets/${id}`);
+    return res?.data || res;
+  },
+  async resolveTicket(id: number, data: { status: string; resolution_notes?: string; new_topic_title?: string }) {
+    return apiClient.put(`/api/v1/thesis/admin/tickets/${id}/resolve`, data);
+  }
+};
+
+// ─── 6. Announcement Service ───────────────────────────────────────────────
+export const announcementService = {
+  async getAnnouncements(params?: any) {
+    const query = new URLSearchParams(params).toString();
+    const res = await apiClient.get<any>(`/api/v1/thesis/announcements${query ? `?${query}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async getAnnouncementById(idOrSlug: string | number) {
+    const res = await apiClient.get<any>(`/api/v1/thesis/announcements/${idOrSlug}`);
+    return res?.data || res;
+  },
+  async createAnnouncement(data: FormData | any) {
+    return apiClient.post('/api/v1/thesis/announcements', data);
+  },
+  async updateAnnouncement(id: number, data: FormData | any) {
+    return apiClient.put(`/api/v1/thesis/announcements/${id}`, data);
+  },
+  async deleteAnnouncement(id: number) {
+    return apiClient.delete(`/api/v1/thesis/announcements/${id}`);
+  }
+};
+
 

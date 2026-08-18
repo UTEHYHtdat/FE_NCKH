@@ -1,28 +1,29 @@
 import { useEffect, useState } from 'react';
-import { Search, Users, FileText, GraduationCap, CheckSquare } from 'lucide-react';
+import { Search, Users, GraduationCap, CheckSquare, Shield, Calendar, MapPin, Clock } from 'lucide-react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar } from '@/components/ui/avatar';
 import { InstructorGradingForm } from '@/components/InstructorGradingForm';
 import { useAuth } from '@/contexts/AuthContext';
-import { gradingService } from '@/plugins/api';
-import { thesisRoundsService } from '@/plugins/api';
+import { gradingService, thesisRoundsService } from '@/plugins/api';
 import type { SupervisionStudent, ReviewStudent, ThesisRound } from '@/types/api';
+
+import { ExcelBatchActions } from '@/components/shared/ExcelBatchActions';
+import { excelBatchService } from '@/plugins/api';
 
 export function InstructorGrading() {
   const { user } = useAuth();
   const userRole = user?.role || 'instructor';
   const [loading, setLoading] = useState(true);
-  const [gradingType, setGradingType] = useState<'supervision' | 'review'>('supervision');
-  const [activeTab, setActiveTab] = useState<'individual' | 'group'>('individual');
+  const [gradingType, setGradingType] = useState<'supervision' | 'review' | 'defense'>('supervision');
   const [searchTerm, setSearchTerm] = useState('');
   
   // API data
   const [supervisionStudents, setSupervisionStudents] = useState<SupervisionStudent[]>([]);
   const [reviewStudents, setReviewStudents] = useState<ReviewStudent[]>([]);
+  const [defenseStudents, setDefenseStudents] = useState<any[]>([]);
   
   // Thesis rounds
   const [thesisRounds, setThesisRounds] = useState<ThesisRound[]>([]);
@@ -38,14 +39,7 @@ export function InstructorGrading() {
     const fetchThesisRounds = async () => {
       try {
         setRoundsLoading(true);
-        console.log('Fetching thesis rounds...');
         const data = await thesisRoundsService.getThesisRoundsForInstructor();
-        console.log('API Response:', data);
-        console.log('Response type:', typeof data);
-        console.log('Is array:', Array.isArray(data));
-        console.log('Keys:', Object.keys(data || {}));
-        
-        // Handle different response formats
         let roundsArray: ThesisRound[] = [];
         if (Array.isArray(data)) {
           roundsArray = data;
@@ -58,12 +52,9 @@ export function InstructorGrading() {
           }
         }
         
-        console.log('Thesis rounds fetched:', roundsArray);
         setThesisRounds(roundsArray);
-        // Auto-select the first round if available
         if (roundsArray.length > 0) {
           setSelectedThesisRoundId(roundsArray[0].id);
-          console.log('Selected thesis round ID:', roundsArray[0].id);
         }
       } catch (error) {
         console.error('Error fetching thesis rounds:', error);
@@ -75,32 +66,29 @@ export function InstructorGrading() {
     fetchThesisRounds();
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const instructorId = user?.instructorId || user?.id;
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const instructorId = user?.instructorId || user?.id;
 
-        if (gradingType === 'supervision') {
-          console.log('Fetching supervision students with instructorId:', instructorId, 'thesisRoundId:', selectedThesisRoundId);
-          const data = await gradingService.getSupervisionStudents(instructorId, selectedThesisRoundId);
-          console.log('Supervision students fetched:', data);
-          console.log('Number of supervision students:', data.length);
-          setSupervisionStudents(data);
-        } else {
-          console.log('Fetching review students with instructorId:', instructorId, 'thesisRoundId:', selectedThesisRoundId);
-          const data = await gradingService.getReviewStudents(instructorId, selectedThesisRoundId);
-          console.log('Review students fetched:', data);
-          console.log('Number of review students:', data.length);
-          setReviewStudents(data);
-        }
-      } catch (error) {
-        console.error('Error fetching grading data:', error);
-      } finally {
-        setLoading(false);
+      if (gradingType === 'supervision') {
+        const data = await gradingService.getSupervisionStudents(instructorId, selectedThesisRoundId);
+        setSupervisionStudents(Array.isArray(data) ? data : []);
+      } else if (gradingType === 'review') {
+        const data = await gradingService.getReviewStudents(instructorId, selectedThesisRoundId);
+        setReviewStudents(Array.isArray(data) ? data : []);
+      } else {
+        const data = await gradingService.getDefenseStudents(selectedThesisRoundId);
+        setDefenseStudents(Array.isArray(data) ? data : []);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching grading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchData();
   }, [gradingType, selectedThesisRoundId, user]);
 
@@ -115,104 +103,135 @@ export function InstructorGrading() {
   };
 
   const handleGradingSuccess = () => {
-    // Refresh the list after successful grading
-    const instructorId = user?.instructorId || user?.id;
-    if (gradingType === 'supervision') {
-      gradingService.getSupervisionStudents(instructorId, selectedThesisRoundId).then(setSupervisionStudents);
-    } else {
-      gradingService.getReviewStudents(instructorId, selectedThesisRoundId).then(setReviewStudents);
-    }
+    fetchData();
     handleCloseGradingForm();
   };
 
   // Get current data based on grading type
-  const currentData = gradingType === 'supervision' ? supervisionStudents : reviewStudents;
+  const getCurrentData = () => {
+    if (gradingType === 'supervision') return supervisionStudents;
+    if (gradingType === 'review') return reviewStudents;
+    return defenseStudents;
+  };
+
+  const currentData = getCurrentData();
 
   // Filter data based on search term
-  const filteredData = currentData.filter((item) => {
+  const filteredData = currentData.filter((item: any) => {
     const searchLower = searchTerm.toLowerCase();
-    const memberNames = item.members.map(m => m.full_name.toLowerCase()).join(' ');
-    const memberCodes = item.members.map(m => m.student_code.toLowerCase()).join(' ');
+    const topic = (item.topic_title || item.topicTitle || '').toLowerCase();
+    const code = (item.thesis_code || item.thesisCode || '').toLowerCase();
+    const members = (item.members || []).map((m: any) => `${m.full_name} ${m.student_code}`).join(' ').toLowerCase();
+    const council = (item.council_name || '').toLowerCase();
     
-    return (
-      item.topic_title.toLowerCase().includes(searchLower) ||
-      item.thesis_code.toLowerCase().includes(searchLower) ||
-      memberNames.includes(searchLower) ||
-      memberCodes.includes(searchLower)
-    );
+    return topic.includes(searchLower) || code.includes(searchLower) || members.includes(searchLower) || council.includes(searchLower);
   });
+
+  const getRoleBadge = (role?: string) => {
+    if (role === 'CHAIRMAN') return <Badge variant="default" className="bg-purple-600 hover:bg-purple-700">Chủ tịch Hội đồng</Badge>;
+    if (role === 'SECRETARY') return <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">Thư ký Hội đồng</Badge>;
+    return <Badge variant="secondary">Ủy viên Hội đồng</Badge>;
+  };
 
   return (
     <PageLayout
       userRole={userRole as any}
-      userName={user?.fullName || 'TS. Nguyễn Văn A'}
-      title={gradingType === 'supervision' ? 'Chấm điểm hướng dẫn' : 'Chấm điểm phản biện'}
-      subtitle={gradingType === 'supervision' ? 'Đánh giá sinh viên và nhóm bạn hướng dẫn' : 'Đánh giá sinh viên và nhóm bạn phản biện'}
+      userName={user?.fullName || 'TS. Giảng viên'}
+      title={
+        gradingType === 'supervision'
+          ? 'Chấm điểm hướng dẫn'
+          : gradingType === 'review'
+          ? 'Chấm điểm phản biện'
+          : 'Chấm điểm Hội đồng bảo vệ'
+      }
+      subtitle={
+        gradingType === 'supervision'
+          ? 'Đánh giá các sinh viên và nhóm bạn đang trực tiếp hướng dẫn'
+          : gradingType === 'review'
+          ? 'Đánh giá và nhận xét các đồ án bạn được phân công phản biện'
+          : 'Chấm điểm bảo vệ cho các đồ án thuộc Hội đồng bạn tham gia'
+      }
+      actions={
+        <ExcelBatchActions
+          exportUrl={excelBatchService.getScoresExportUrl(selectedThesisRoundId)}
+          exportLabel="Xuất Bảng Điểm (Excel)"
+        />
+      }
     >
-      {/* Grading Type Tabs */}
-      <div className="flex gap-2 mb-4">
+      {/* 3 Tab chuyển đổi loại chấm điểm */}
+      <div className="flex flex-wrap gap-2 mb-6">
         <Button
           variant={gradingType === 'supervision' ? 'default' : 'outline'}
           onClick={() => setGradingType('supervision')}
+          className="flex items-center gap-2"
         >
-          <GraduationCap className="w-4 h-4 mr-2" />
+          <GraduationCap className="w-4 h-4" />
           Chấm điểm hướng dẫn
         </Button>
         <Button
           variant={gradingType === 'review' ? 'default' : 'outline'}
           onClick={() => setGradingType('review')}
+          className="flex items-center gap-2"
         >
-          <CheckSquare className="w-4 h-4 mr-2" />
+          <CheckSquare className="w-4 h-4" />
           Chấm điểm phản biện
+        </Button>
+        <Button
+          variant={gradingType === 'defense' ? 'default' : 'outline'}
+          onClick={() => setGradingType('defense')}
+          className="flex items-center gap-2"
+        >
+          <Shield className="w-4 h-4" />
+          Chấm điểm Hội đồng
         </Button>
       </div>
 
-      {/* Thesis Round Filter */}
-      <div className="mb-4">
-        <label className="text-sm font-medium mb-2 block">Đợt khóa luận:</label>
-        {roundsLoading ? (
-          <p className="text-sm text-muted-foreground">Đang tải đợt khóa luận...</p>
-        ) : thesisRounds.length > 0 ? (
-          <select
-            className="w-full max-w-xs px-3 py-2 border border-border rounded-md bg-background"
-            value={selectedThesisRoundId || ''}
-            onChange={(e) => setSelectedThesisRoundId(e.target.value ? Number(e.target.value) : undefined)}
-          >
-            {thesisRounds.map((round) => (
-              <option key={round.id} value={round.id}>
-                {round.round_name}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <p className="text-sm text-muted-foreground">Không có đợt khóa luận nào</p>
-        )}
-      </div>
+      {/* Bộ lọc đợt khóa luận & tìm kiếm */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div>
+          <label className="text-sm font-medium mb-1.5 block">Đợt khóa luận:</label>
+          {roundsLoading ? (
+            <p className="text-sm text-muted-foreground">Đang tải đợt khóa luận...</p>
+          ) : thesisRounds.length > 0 ? (
+            <select
+              className="w-full px-3 py-2 border border-border rounded-md bg-background text-sm"
+              value={selectedThesisRoundId || ''}
+              onChange={(e) => setSelectedThesisRoundId(e.target.value ? Number(e.target.value) : undefined)}
+            >
+              {thesisRounds.map((round) => (
+                <option key={round.id} value={round.id}>
+                  {round.round_name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="text-sm text-muted-foreground">Không có đợt khóa luận nào</p>
+          )}
+        </div>
 
-      {/* Search */}
-      <Card className="mb-6">
-        <CardContent className="p-4">
+        <div className="md:col-span-2">
+          <label className="text-sm font-medium mb-1.5 block">Tìm kiếm:</label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm theo mã đồ án, tên đề tài, hoặc sinh viên..."
-              className="pl-10"
+              placeholder="Tìm kiếm theo mã đề tài, tên đề tài, sinh viên, hội đồng..."
+              className="pl-9 text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Content */}
+      {/* Danh sách đề tài */}
       {loading ? (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">Đang tải...</p>
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Đang tải danh sách đề tài...</p>
         </div>
       ) : filteredData.length === 0 ? (
         <Card>
-          <CardContent className="text-center py-8 text-muted-foreground">
-            {searchTerm ? 'Không tìm thấy kết quả nào' : 'Không có dữ liệu'}
+          <CardContent className="text-center py-12 text-muted-foreground">
+            {searchTerm ? 'Không tìm thấy kết quả nào phù hợp' : 'Chưa có đề tài nào cần chấm trong danh mục này'}
           </CardContent>
         </Card>
       ) : (
@@ -221,68 +240,116 @@ export function InstructorGrading() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>
-                  {gradingType === 'supervision' ? 'Danh sách hướng dẫn' : 'Danh sách phản biện'}
+                  {gradingType === 'supervision'
+                    ? 'Danh sách đề tài Hướng dẫn'
+                    : gradingType === 'review'
+                    ? 'Danh sách đề tài Phản biện'
+                    : 'Danh sách đề tài Hội đồng bảo vệ'}
                 </CardTitle>
                 <CardDescription>
-                  {gradingType === 'supervision' ? 'Các đồ án bạn đang hướng dẫn' : 'Các đồ án bạn cần phản biện'}
+                  {gradingType === 'supervision'
+                    ? 'Các đồ án bạn đang hướng dẫn'
+                    : gradingType === 'review'
+                    ? 'Các đồ án bạn được phân công phản biện'
+                    : 'Các đồ án được xếp lịch bảo vệ trong hội đồng của bạn'}
                 </CardDescription>
               </div>
-              <Badge variant="secondary">{filteredData.length}</Badge>
+              <Badge variant="blue">{filteredData.length} đề tài</Badge>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {filteredData.map((item) => (
-                <div
-                  key={item.thesis_id}
-                  className="flex items-start gap-4 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Users className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <p className="font-semibold">{item.topic_title}</p>
-                      <Badge variant={item.is_graded ? 'default' : 'secondary'}>
-                        {item.is_graded ? 'Đã chấm' : 'Chờ chấm'}
-                      </Badge>
-                      {gradingType === 'review' && 'review_deadline' in item && (
-                        <Badge variant="outline">
-                          Hạn: {new Date(item.review_deadline).toLocaleDateString('vi-VN')}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Mã đồ án: {item.thesis_code} • Đợt ID: {item.thesis_round_id}
-                    </p>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Thành viên: {item.members.map(m => `${m.full_name} (${m.student_code})`).join(', ')}
-                    </p>
-                    {gradingType === 'review' && 'supervisor' in item && (
-                      <p className="text-sm text-muted-foreground">
-                        GV hướng dẫn: {item.supervisor.full_name} ({item.supervisor.instructor_code})
-                      </p>
-                    )}
-                    {item.is_graded && (
-                      <p className="text-sm font-medium mt-1">
-                        Điểm: {gradingType === 'supervision' ? (item as SupervisionStudent).supervision_score : (item as ReviewStudent).review_score}
-                      </p>
-                    )}
-                  </div>
-                  <Button 
-                    onClick={() => handleOpenGradingForm(item)}
-                    disabled={item.is_graded}
+              {filteredData.map((item: any, idx: number) => {
+                const topicTitle = item.topic_title || item.topicTitle;
+                const thesisCode = item.thesis_code || item.thesisCode;
+                const members = item.members || [];
+                const isGraded = item.is_graded;
+
+                return (
+                  <div
+                    key={item.thesis_id || item.assignment_id || idx}
+                    className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-lg border border-border hover:border-primary/40 bg-muted/10 hover:bg-muted/30 transition-colors"
                   >
-                    {item.is_graded ? 'Đã chấm' : 'Chấm điểm'}
-                  </Button>
-                </div>
-              ))}
+                    <div className="flex items-start gap-3.5 flex-1 min-w-0">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                        {gradingType === 'supervision' ? (
+                          <GraduationCap className="w-5 h-5 text-primary" />
+                        ) : gradingType === 'review' ? (
+                          <CheckSquare className="w-5 h-5 text-primary" />
+                        ) : (
+                          <Shield className="w-5 h-5 text-primary" />
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h4 className="font-semibold text-sm line-clamp-1">{topicTitle}</h4>
+                          <Badge variant={isGraded ? 'default' : 'secondary'} className="shrink-0">
+                            {isGraded ? 'Đã chấm' : 'Chờ chấm'}
+                          </Badge>
+                          {gradingType === 'defense' && getRoleBadge(item.role_in_council)}
+                        </div>
+
+                        <p className="text-xs text-muted-foreground font-mono mb-1">
+                          Mã đề tài: {thesisCode}
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-xs text-muted-foreground">
+                          <span>
+                            Sinh viên: <strong className="text-foreground font-medium">{members.map((m: any) => `${m.full_name} (${m.student_code})`).join(', ')}</strong>
+                          </span>
+
+                          {gradingType === 'defense' && item.council_name && (
+                            <span>• 🏛️ {item.council_name}</span>
+                          )}
+
+                          {gradingType === 'defense' && item.venue && (
+                            <span>• 📍 {item.venue}</span>
+                          )}
+
+                          {gradingType === 'defense' && item.defense_date && (
+                            <span>• 📅 {new Date(item.defense_date).toLocaleDateString('vi-VN')}</span>
+                          )}
+
+                          {gradingType === 'review' && item.supervisor && (
+                            <span>• GVHD: {item.supervisor.full_name}</span>
+                          )}
+                        </div>
+
+                        {isGraded && (
+                          <div className="mt-2 text-xs text-green-600 dark:text-green-400 font-semibold flex items-center gap-1.5">
+                            <span>Điểm đã chấm:</span>
+                            <span className="text-sm bg-green-50 dark:bg-green-950/40 px-2 py-0.5 rounded border border-green-200">
+                              {gradingType === 'supervision'
+                                ? item.supervision_score
+                                : gradingType === 'review'
+                                ? item.review_score
+                                : item.my_score} / 10.0
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenGradingForm(item)}
+                        variant={isGraded ? 'outline' : 'default'}
+                        className={!isGraded ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+                      >
+                        {isGraded ? 'Chấm lại / Xem' : 'Chấm điểm ngay'}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Grading Form Modal */}
+      {/* Form Chấm điểm */}
       {selectedStudent && (
         <InstructorGradingForm
           isOpen={isGradingFormOpen}
@@ -292,9 +359,15 @@ export function InstructorGrading() {
             name: selectedStudent.members?.[0]?.full_name || '',
             studentId: selectedStudent.members?.[0]?.student_code || '',
             className: selectedStudent.members?.[0]?.class_name || '',
-            topicName: selectedStudent.topic_title,
-            thesisCode: selectedStudent.thesis_code,
-            thesisId: selectedStudent.thesis_id,
+            topicName: selectedStudent.topic_title || selectedStudent.topicTitle,
+            topicTitle: selectedStudent.topic_title || selectedStudent.topicTitle,
+            thesisCode: selectedStudent.thesis_code || selectedStudent.thesisCode,
+            thesisId: selectedStudent.thesis_id || selectedStudent.thesisId,
+            assignmentId: selectedStudent.assignment_id,
+            council_name: selectedStudent.council_name,
+            venue: selectedStudent.venue,
+            role_in_council: selectedStudent.role_in_council,
+            members: selectedStudent.members,
             gradingType: gradingType,
             reviewAssignmentId: gradingType === 'review' ? (selectedStudent as ReviewStudent).review_assignment_id : undefined,
           }}
