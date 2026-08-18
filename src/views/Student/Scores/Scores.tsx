@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import { TrendingUp, Award, BookOpen, GraduationCap } from 'lucide-react';
 import { PageLayout } from '@/components/layout/PageLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { gradingService } from '@/plugins/api';
 
@@ -19,19 +25,19 @@ export function Scores() {
       try {
         setLoading(true);
         // Fetch scores from API
-        // const data = await gradingService.getThesisScores(thesisId);
-        // setScores(data);
-        
+        const data = await gradingService.getThesisScores(thesisId);
+        setScores(data);
+
         // Placeholder data
-        setScores({
-          supervision_score: 8.5,
-          review_scores: [
-            { reviewer: 'GV Phản biện 1', score: 8.0 },
-            { reviewer: 'GV Phản biện 2', score: 8.5 },
-          ],
-          defense_score: '-',
-          final_score: '-',
-        });
+        // setScores({
+        //   supervision_score: 8.5,
+        //   review_scores: [
+        //     { reviewer: 'GV Phản biện 1', score: 8.0 },
+        //     { reviewer: 'GV Phản biện 2', score: 8.5 },
+        //   ],
+        //   defense_score: '-',
+        //   final_score: '-',
+        // });
       } catch (error) {
         console.error('Error fetching scores:', error);
       } finally {
@@ -57,9 +63,15 @@ export function Scores() {
     );
   }
 
-  const averageReviewScore = scores.review_scores.length > 0
-    ? (scores.review_scores.reduce((sum: number, r: any) => sum + r.score, 0) / scores.review_scores.length).toFixed(1)
-    : '-';
+  const averageReviewScore =
+    scores.review_scores.length > 0
+      ? (
+          scores.review_scores.reduce(
+            (sum: number, r: any) => sum + r.score,
+            0,
+          ) / scores.review_scores.length
+        ).toFixed(1)
+      : '-';
 
   return (
     <PageLayout
@@ -135,7 +147,9 @@ export function Scores() {
               <div className="text-5xl font-bold text-violet-600 mb-2">
                 {scores.defense_score}
               </div>
-              <Badge variant={scores.defense_score === '-' ? 'outline' : 'secondary'}>
+              <Badge
+                variant={scores.defense_score === '-' ? 'outline' : 'secondary'}
+              >
                 {scores.defense_score === '-' ? 'Chưa chấm' : 'Đã chấm'}
               </Badge>
             </div>
@@ -163,7 +177,8 @@ export function Scores() {
             </div>
             {scores.final_score === '-' ? (
               <p className="text-muted-foreground">
-                Điểm tổng kết sẽ được tính sau khi hoàn thành tất cả các phần đánh giá
+                Điểm tổng kết sẽ được tính sau khi hoàn thành tất cả các phần
+                đánh giá
               </p>
             ) : (
               <Badge variant="default" className="text-lg px-4 py-2">
@@ -190,9 +205,13 @@ export function Scores() {
                 >
                   <div>
                     <p className="font-medium">{review.reviewer}</p>
-                    <p className="text-sm text-muted-foreground">Giảng viên phản biện #{index + 1}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Giảng viên phản biện #{index + 1}
+                    </p>
                   </div>
-                  <div className="text-2xl font-bold text-blue-600">{review.score}</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {review.score}
+                  </div>
                 </div>
               ))}
             </div>

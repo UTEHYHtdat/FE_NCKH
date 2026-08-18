@@ -100,6 +100,22 @@ export function HeadGradingTemplates() {
     }
   };
 
+  const processMammothHtml = (html: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const tables = doc.querySelectorAll('table');
+    tables.forEach(table => {
+      const text = table.textContent?.toLowerCase() || '';
+      // Phân biệt bảng điểm và bảng layout (header)
+      if (text.includes('tiêu chí') || text.includes('điểm') || text.includes('stt') || text.includes('nội dung')) {
+        table.classList.add('data-table');
+      } else {
+        table.classList.add('layout-table');
+      }
+    });
+    return doc.body.innerHTML;
+  };
+
   // Bước 1 → Bước 2: chuyển đổi file để xem trước
   const handlePreviewFile = async () => {
     if (!currentTemplate.name) {
@@ -117,7 +133,7 @@ export function HeadGradingTemplates() {
       if (selectedFile.name.endsWith('.docx') || selectedFile.name.endsWith('.doc')) {
         const arrayBuffer = await selectedFile.arrayBuffer();
         const result = await mammoth.convertToHtml({ arrayBuffer });
-        setPreviewHtml(result.value);
+        setPreviewHtml(processMammothHtml(result.value));
       } else if (selectedFile.type === 'application/pdf') {
         // PDF sẽ dùng native viewer, không cần convert
         setPreviewHtml('__PDF__');
@@ -228,7 +244,7 @@ export function HeadGradingTemplates() {
         const blob = await response.blob();
         const arrayBuffer = await blob.arrayBuffer();
         const result = await mammoth.convertToHtml({ arrayBuffer });
-        setViewTemplateContent(result.value);
+        setViewTemplateContent(processMammothHtml(result.value));
       } else {
         setViewTemplateContent('__UNSUPPORTED__');
       }
@@ -276,6 +292,41 @@ export function HeadGradingTemplates() {
           padding: 2.5cm !important;
           margin: 0 auto !important;
           border: 1px solid #e2e8f0 !important;
+        }
+        .docx-preview table {
+          border-collapse: collapse;
+          width: 100%;
+          margin-bottom: 1rem;
+        }
+        .docx-preview table.data-table, .docx-preview table.data-table th, .docx-preview table.data-table td {
+          border: 1px solid black;
+        }
+        .docx-preview table.layout-table, .docx-preview table.layout-table th, .docx-preview table.layout-table td {
+          border: none !important;
+        }
+        .docx-preview th, .docx-preview td {
+          padding: 4px 8px;
+        }
+        .docx-preview table.layout-table td {
+          padding: 0px 4px;
+        }
+        .docx-preview table.layout-table td:nth-child(2) {
+          text-align: center;
+        }
+        .docx-preview p {
+          margin-bottom: 0.5rem;
+          margin-top: 0;
+        }
+        .docx-preview h1, .docx-preview h2, .docx-preview h3, .docx-preview h4 {
+          margin-top: 1rem;
+          margin-bottom: 0.5rem;
+          font-weight: bold;
+        }
+        .docx-preview h1 { font-size: 1.5em; text-align: center; }
+        .docx-preview h2 { font-size: 1.25em; }
+        .docx-preview img {
+          max-width: 100%;
+          height: auto;
         }
       `}</style>
 
@@ -395,7 +446,7 @@ export function HeadGradingTemplates() {
                   ) : (
                     <div className="flex justify-center py-10 px-4">
                       <div 
-                        className="bg-white shadow-xl border border-slate-200 p-[2.5cm] font-serif text-[14pt] leading-relaxed" 
+                        className="bg-white shadow-xl border border-slate-200 p-[2.5cm] font-serif text-[14pt] leading-relaxed docx-preview" 
                         style={{ width: '21cm', minHeight: '29.7cm', fontFamily: "'Times New Roman', Times, serif" }}
                         dangerouslySetInnerHTML={{ __html: previewHtml }}
                       />
@@ -552,7 +603,7 @@ export function HeadGradingTemplates() {
               ) : (
                 <div className="py-10 px-4 w-full flex justify-center">
                   <div 
-                    className="bg-white shadow-xl border border-slate-200 p-[2.5cm] font-serif text-[14pt] leading-relaxed max-w-full" 
+                    className="bg-white shadow-xl border border-slate-200 p-[2.5cm] font-serif text-[14pt] leading-relaxed max-w-full docx-preview" 
                     style={{ width: '21cm', minHeight: '29.7cm', fontFamily: "'Times New Roman', Times, serif" }}
                     dangerouslySetInnerHTML={{ __html: viewTemplateContent }}
                   />

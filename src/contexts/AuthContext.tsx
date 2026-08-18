@@ -1,6 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authService } from '@/plugins/api';
-import type { User, Profile, LoginRequest, UserRole } from '@/types/api';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
+import { authService } from '../plugins/api';
+import type { User, Profile, LoginRequest, UserRole } from '../types/api';
 
 interface AuthContextType {
   user: User | null;
@@ -60,7 +66,9 @@ const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,12 +79,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Check for stored user on mount
     const storedUser = authService.getStoredUser();
     const storedToken = authService.getToken();
-    
+
     if (storedUser && storedToken) {
-      // Normalize role to lowercase
+      // Normalize role to lowercase and map full_name
       const normalizedUser = {
         ...storedUser,
-        role: storedUser.role.toLowerCase() as UserRole
+        fullName:
+          (storedUser as any).full_name ||
+          (storedUser as any).fullName ||
+          storedUser.username,
+        role: storedUser.role?.toLowerCase() as UserRole,
       };
       setUser(normalizedUser);
     }
@@ -87,18 +99,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const response = await authService.login(credentials);
     console.log('Login response user:', response.user);
     console.log('User role:', response.user?.role);
-    
+
     // Convert role to lowercase to handle backend returning uppercase roles
-    const normalizedUser = response.user ? {
-      ...response.user,
-      role: response.user.role.toLowerCase() as UserRole
-    } : null;
-    
+    // Map full_name to fullName
+    const normalizedUser = response.user
+      ? {
+          ...response.user,
+          fullName:
+            (response.user as any).full_name ||
+            (response.user as any).fullName ||
+            response.user.username,
+          role: response.user.role?.toLowerCase() as UserRole,
+        }
+      : null;
+
     // Validate role
     if (normalizedUser?.role && !ROLE_PERMISSIONS[normalizedUser.role]) {
       throw new Error(`Invalid role: ${normalizedUser.role}`);
     }
-    
+
     setUser(normalizedUser);
     await refreshProfile();
   };
@@ -140,13 +159,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const hasPermission = (permission: string): boolean => {
     if (!user?.role) return false;
     const permissions = ROLE_PERMISSIONS[user.role] || [];
-    return permissions.includes(permission) || permissions.includes('full_access');
+    return (
+      permissions.includes(permission) || permissions.includes('full_access')
+    );
   };
 
   // Check if user can access based on required roles
   const canAccess = (requiredRoles: UserRole | UserRole[]): boolean => {
     if (!user?.role) return false;
-    const rolesArray = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
+    const rolesArray = Array.isArray(requiredRoles)
+      ? requiredRoles
+      : [requiredRoles];
     return rolesArray.includes(user.role);
   };
 

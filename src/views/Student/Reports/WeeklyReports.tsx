@@ -1,10 +1,30 @@
 import { useEffect, useState } from 'react';
-import { Plus, FileText, Calendar, CheckCircle2, AlertCircle, MessageSquare } from 'lucide-react';
+import {
+  Plus,
+  FileText,
+  Calendar,
+  CheckCircle2,
+  AlertCircle,
+  MessageSquare,
+} from 'lucide-react';
 import { PageLayout } from '@/components/layout/PageLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Badge, getStatusBadgeVariant } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -36,16 +56,27 @@ export function WeeklyReports() {
         const [roundsRes, regsRes] = await Promise.all([
           thesisRoundsService.getThesisRoundsForStudent(),
           // Import topicRegistrationService at the top
-          import('@/plugins/api').then(s => s.topicRegistrationService.getTopicRegistrations())
+          import('@/plugins/api').then((s) =>
+            s.topicRegistrationService.getTopicRegistrations(),
+          ),
         ]);
-        
+
         const rounds = roundsRes.success ? roundsRes.data : [];
-        const ongoingRounds = rounds.filter((r: any) => r.status?.toUpperCase() === 'ONGOING' || r.status?.toUpperCase() === 'IN PROGRESS');
-        
-        const approvedReg = (regsRes || []).find((r: any) => r.instructor_status === 'APPROVED' && r.head_status === 'APPROVED');
-        
+        const ongoingRounds = rounds.filter(
+          (r: any) =>
+            r.status?.toUpperCase() === 'ONGOING' ||
+            r.status?.toUpperCase() === 'IN PROGRESS',
+        );
+
+        const approvedReg = (regsRes || []).find(
+          (r: any) =>
+            r.instructor_status === 'APPROVED' && r.head_status === 'APPROVED',
+        );
+
         if (approvedReg) {
-          const approvedRound = rounds.find((r: any) => r.id === approvedReg.thesis_round_id);
+          const approvedRound = rounds.find(
+            (r: any) => r.id === approvedReg.thesis_round_id,
+          );
           if (approvedRound) {
             setThesisRounds([approvedRound]);
             setSelectedRound(approvedRound.id);
@@ -61,7 +92,7 @@ export function WeeklyReports() {
             setSelectedRound(ongoingRounds[0].id);
           }
         }
-        
+
         setRegistrations(regsRes || []);
       } catch (error) {
         console.error('Error fetching init data:', error);
@@ -74,7 +105,9 @@ export function WeeklyReports() {
   useEffect(() => {
     if (selectedRound && registrations.length > 0) {
       // Find the registration for the selected round
-      const reg = registrations.find(r => r.thesis_round_id === selectedRound);
+      const reg = registrations.find(
+        (r) => r.thesis_round_id === selectedRound,
+      );
       if (reg && reg.theses?.id) {
         setThesisId(reg.theses.id);
       } else {
@@ -94,7 +127,9 @@ export function WeeklyReports() {
       try {
         setLoading(true);
         const response = await reportService.getThesisWeeklyReports(thesisId);
-        setReports(Array.isArray(response) ? response : ((response as any)?.data || []));
+        setReports(
+          Array.isArray(response) ? response : (response as any)?.data || [],
+        );
       } catch (error) {
         console.error('Error fetching reports:', error);
       } finally {
@@ -113,7 +148,7 @@ export function WeeklyReports() {
 
     try {
       setIsSubmitting(true);
-      
+
       let attachmentUrl = '';
       if (selectedFile) {
         const uploadRes = await reportService.uploadAttachment(selectedFile);
@@ -133,7 +168,9 @@ export function WeeklyReports() {
 
       // Refresh reports
       const response = await reportService.getThesisWeeklyReports(thesisId);
-      setReports(Array.isArray(response) ? response : ((response as any)?.data || []));
+      setReports(
+        Array.isArray(response) ? response : (response as any)?.data || [],
+      );
 
       // Reset form and close dialog
       setReportForm({
@@ -179,51 +216,36 @@ export function WeeklyReports() {
       userName="Nguyễn Văn A"
       title="Báo cáo tuần"
       subtitle="Quản lý và theo dõi báo cáo tiến độ tuần"
-      actions={
-        <div className="flex items-center gap-4">
-          <select
-            className="px-3 py-2 bg-background border border-input rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            value={selectedRound || ''}
-            onChange={(e) => setSelectedRound(Number(e.target.value))}
-            disabled={thesisRounds.length === 1}
-          >
-            <option value="">-- Chọn đợt khóa luận --</option>
-            {thesisRounds.map((round) => (
-              <option key={round.id} value={round.id}>
-                {round.round_name || round.semester || `Đợt ${round.id}`}
-              </option>
-            ))}
-          </select>
-          <Button 
-            onClick={() => setIsDialogOpen(true)}
-            disabled={!thesisId}
-            title={!thesisId ? "Bạn chưa được phân công đồ án trong đợt này" : ""}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Tạo báo cáo mới
-          </Button>
-        </div>
-      }
     >
       <div className="grid grid-cols-1 gap-6">
         {!selectedRound ? (
           <Card>
             <CardContent className="p-12 text-center">
               <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Vui lòng chọn đợt khóa luận</h3>
-              <p className="text-muted-foreground">Chọn một đợt khóa luận để xem báo cáo tuần</p>
+              <h3 className="text-lg font-semibold mb-2">
+                Vui lòng chọn đợt khóa luận
+              </h3>
+              <p className="text-muted-foreground">
+                Chọn một đợt khóa luận để xem báo cáo tuần
+              </p>
             </CardContent>
           </Card>
         ) : reports.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <FileText className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Chưa có báo cáo nào</h3>
-              <p className="text-muted-foreground mb-4">Bắt đầu tạo báo cáo tuần đầu tiên của bạn</p>
-              <Button 
+              <h3 className="text-lg font-semibold mb-2">
+                Chưa có báo cáo nào
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Bắt đầu tạo báo cáo tuần đầu tiên của bạn
+              </p>
+              <Button
                 onClick={() => setIsDialogOpen(true)}
                 disabled={!thesisId}
-                title={!thesisId ? "Bạn chưa được phân công đồ án trong đợt này" : ""}
+                title={
+                  !thesisId ? 'Bạn chưa được phân công đồ án trong đợt này' : ''
+                }
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Tạo báo cáo đầu tiên
@@ -238,13 +260,20 @@ export function WeeklyReports() {
                   <div>
                     <CardTitle>Báo cáo tuần {report.week_number}</CardTitle>
                     <CardDescription>
-                      Nộp ngày: {new Date(report.report_date).toLocaleDateString('vi-VN')}
+                      Nộp ngày:{' '}
+                      {new Date(report.report_date).toLocaleDateString('vi-VN')}
                     </CardDescription>
                   </div>
-                  <Badge variant={getStatusBadgeVariant(report.instructor_status)}>
-                    {report.instructor_status === 'APPROVED' ? 'Đã duyệt' : 
-                     report.instructor_status === 'PENDING' ? 'Chờ đánh giá' :
-                     report.instructor_status === 'REJECTED' ? 'Bị từ chối' : 'Cần sửa đổi'}
+                  <Badge
+                    variant={getStatusBadgeVariant(report.instructor_status)}
+                  >
+                    {report.instructor_status === 'APPROVED'
+                      ? 'Đã duyệt'
+                      : report.instructor_status === 'PENDING'
+                        ? 'Chờ đánh giá'
+                        : report.instructor_status === 'REJECTED'
+                          ? 'Bị từ chối'
+                          : 'Cần sửa đổi'}
                   </Badge>
                 </div>
               </CardHeader>
@@ -255,24 +284,30 @@ export function WeeklyReports() {
                       <FileText className="w-4 h-4" />
                       Công việc đã hoàn thành
                     </h4>
-                    <p className="text-sm text-muted-foreground">{report.work_completed}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {report.work_completed}
+                    </p>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                       <h4 className="font-medium mb-2 flex items-center gap-2 text-green-800">
                         <CheckCircle2 className="w-4 h-4" />
                         Kết quả đạt được
                       </h4>
-                      <p className="text-sm text-green-700">{report.results_achieved}</p>
+                      <p className="text-sm text-green-700">
+                        {report.results_achieved}
+                      </p>
                     </div>
-                    
+
                     <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
                       <h4 className="font-medium mb-2 flex items-center gap-2 text-amber-800">
                         <AlertCircle className="w-4 h-4" />
                         Khó khăn gặp phải
                       </h4>
-                      <p className="text-sm text-amber-700">{report.difficulties_encountered}</p>
+                      <p className="text-sm text-amber-700">
+                        {report.difficulties_encountered}
+                      </p>
                     </div>
                   </div>
 
@@ -281,15 +316,17 @@ export function WeeklyReports() {
                       <Calendar className="w-4 h-4" />
                       Kế hoạch tuần sau
                     </h4>
-                    <p className="text-sm text-blue-700">{report.next_week_plan}</p>
+                    <p className="text-sm text-blue-700">
+                      {report.next_week_plan}
+                    </p>
                   </div>
 
                   {report.attachment_file && (
                     <div className="flex items-center gap-2 mt-2">
                       <FileText className="w-4 h-4 text-muted-foreground" />
-                      <a 
-                        href={`http://localhost:8002${report.attachment_file}`} 
-                        target="_blank" 
+                      <a
+                        href={`http://localhost:8002${report.attachment_file}`}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-blue-600 hover:underline"
                       >
@@ -298,21 +335,29 @@ export function WeeklyReports() {
                     </div>
                   )}
 
-                  {(report.instructor_feedback || report.weekly_score != null) && (
+                  {(report.instructor_feedback ||
+                    report.weekly_score != null) && (
                     <div className="p-4 bg-muted rounded-lg border mt-4">
                       <h4 className="font-medium mb-2 flex items-center gap-2">
                         <MessageSquare className="w-4 h-4" />
                         Nhận xét của giảng viên
                       </h4>
                       {report.instructor_feedback && (
-                        <p className="text-sm text-muted-foreground">{report.instructor_feedback}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {report.instructor_feedback}
+                        </p>
                       )}
                       {report.weekly_score != null && (
-                        <p className="text-sm font-semibold mt-2">Điểm: {report.weekly_score}/10</p>
+                        <p className="text-sm font-semibold mt-2">
+                          Điểm: {report.weekly_score}/10
+                        </p>
                       )}
                       {report.feedback_date && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Đánh giá ngày: {new Date(report.feedback_date).toLocaleDateString('vi-VN')}
+                          Đánh giá ngày:{' '}
+                          {new Date(report.feedback_date).toLocaleDateString(
+                            'vi-VN',
+                          )}
                         </p>
                       )}
                     </div>
@@ -342,7 +387,9 @@ export function WeeklyReports() {
                 id="weekNumber"
                 type="number"
                 value={reportForm.weekNumber}
-                onChange={(e) => setReportForm({ ...reportForm, weekNumber: e.target.value })}
+                onChange={(e) =>
+                  setReportForm({ ...reportForm, weekNumber: e.target.value })
+                }
                 className="col-span-3"
                 placeholder="1"
                 min="1"
@@ -356,7 +403,12 @@ export function WeeklyReports() {
               <Textarea
                 id="workCompleted"
                 value={reportForm.workCompleted}
-                onChange={(e) => setReportForm({ ...reportForm, workCompleted: e.target.value })}
+                onChange={(e) =>
+                  setReportForm({
+                    ...reportForm,
+                    workCompleted: e.target.value,
+                  })
+                }
                 className="col-span-3"
                 placeholder="Mô tả công việc đã thực hiện..."
                 rows={3}
@@ -369,20 +421,33 @@ export function WeeklyReports() {
               <Textarea
                 id="resultsAchieved"
                 value={reportForm.resultsAchieved}
-                onChange={(e) => setReportForm({ ...reportForm, resultsAchieved: e.target.value })}
+                onChange={(e) =>
+                  setReportForm({
+                    ...reportForm,
+                    resultsAchieved: e.target.value,
+                  })
+                }
                 className="col-span-3"
                 placeholder="Các kết quả đã đạt được..."
                 rows={2}
               />
             </div>
             <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="difficultiesEncountered" className="text-right pt-2">
+              <Label
+                htmlFor="difficultiesEncountered"
+                className="text-right pt-2"
+              >
                 Khó khăn gặp phải
               </Label>
               <Textarea
                 id="difficultiesEncountered"
                 value={reportForm.difficultiesEncountered}
-                onChange={(e) => setReportForm({ ...reportForm, difficultiesEncountered: e.target.value })}
+                onChange={(e) =>
+                  setReportForm({
+                    ...reportForm,
+                    difficultiesEncountered: e.target.value,
+                  })
+                }
                 className="col-span-3"
                 placeholder="Các vấn đề gặp phải..."
                 rows={2}
@@ -395,7 +460,9 @@ export function WeeklyReports() {
               <Textarea
                 id="nextWeekPlan"
                 value={reportForm.nextWeekPlan}
-                onChange={(e) => setReportForm({ ...reportForm, nextWeekPlan: e.target.value })}
+                onChange={(e) =>
+                  setReportForm({ ...reportForm, nextWeekPlan: e.target.value })
+                }
                 className="col-span-3"
                 placeholder="Kế hoạch cho tuần tới..."
                 rows={2}
@@ -408,7 +475,9 @@ export function WeeklyReports() {
               <Input
                 id="attachmentFile"
                 type="file"
-                onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
+                onChange={(e) =>
+                  setSelectedFile(e.target.files ? e.target.files[0] : null)
+                }
                 className="col-span-3"
                 accept=".pdf,.doc,.docx,.zip,.rar"
               />

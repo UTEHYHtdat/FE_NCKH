@@ -7,12 +7,15 @@ import { Badge } from '@/components/ui/badge';
 import { adminService } from '@/plugins/api';
 import type { UserManagement } from '@/types/api';
 
+import { ModalCreateUser } from './ModalCreateUser';
+
 export function AdminUserManagement() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserManagement[]>([]);
   const [filterRole, setFilterRole] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -62,7 +65,7 @@ export function AdminUserManagement() {
       title="Quản lý Người dùng"
       subtitle="Quản lý người dùng trong hệ thống"
       actions={
-        <Button>
+        <Button onClick={() => setIsAddModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Thêm người dùng mới
         </Button>
@@ -197,6 +200,12 @@ export function AdminUserManagement() {
           </div>
         </CardContent>
       </Card>
+      
+      <ModalCreateUser 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onSuccess={fetchUsers} 
+      />
     </PageLayout>
   );
 }

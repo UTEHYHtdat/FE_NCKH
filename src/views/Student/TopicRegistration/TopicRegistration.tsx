@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { topicRegistrationService, thesisGroupsService, thesisRoundsService, instructorService } from '@/plugins/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function TopicRegistration() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -29,8 +30,9 @@ export function TopicRegistration() {
   const [selfProposedDescription, setSelfProposedDescription] = useState('');
   const [selectionReason, setSelectionReason] = useState('');
   
-  // Student info (should come from auth context)
-  const [studentId, setStudentId] = useState<number>(1); // TODO: Get from auth context
+  // Student info from auth context
+  const { user } = useAuth();
+  const studentId = user?.studentId || 1; // Fallback to 1 if not available, though backend validates
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [registrationMode, setRegistrationMode] = useState<'group' | 'individual'>('group');
   const [approvedRegistration, setApprovedRegistration] = useState<any | null>(null);
@@ -50,9 +52,9 @@ export function TopicRegistration() {
         console.log('Thesis rounds:', rounds);
         setThesisRounds(rounds);
 
-        // Get thesis groups
+        // Get thesis groups for this student
         try {
-          const groups = await thesisGroupsService.getThesisGroups();
+          const groups = await thesisGroupsService.getThesisGroups(studentId);
           setThesisGroups(groups);
         } catch (e) {
           console.error('Error fetching groups:', e);

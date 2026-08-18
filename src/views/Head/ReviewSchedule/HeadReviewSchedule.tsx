@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/Modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { thesisRoundsService, councilService } from '@/plugins/api';
+import { thesisRoundsService, councilService, apiClient } from '@/plugins/api';
 import type { ThesisRound } from '@/types/api';
 
 interface ReviewScheduleItem {
@@ -46,6 +46,7 @@ interface ScheduleForm {
   committeeId?: number;
   reviewer1?: string;
   reviewer2?: string;
+  gradingTemplateId?: number;
   scheduledDate: string;
   scheduledTime: string;
   location: string;
@@ -63,6 +64,7 @@ export function HeadReviewSchedule() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [gradingTemplates, setGradingTemplates] = useState<any[]>([]);
 
   // Multi-schedule creation state
   const [scheduleForms, setScheduleForms] = useState<ScheduleForm[]>([
@@ -79,6 +81,7 @@ export function HeadReviewSchedule() {
   useEffect(() => {
     fetchRounds();
     fetchCouncils();
+    fetchGradingTemplates();
     // Load schedules from localStorage
     const savedSchedules = localStorage.getItem('reviewSchedules');
     if (savedSchedules) {
@@ -155,6 +158,15 @@ export function HeadReviewSchedule() {
       setCommittees(mappedCommittees);
     } catch (error) {
       console.error('Error fetching councils:', error);
+    }
+  };
+
+  const fetchGradingTemplates = async () => {
+    try {
+      const response = await apiClient.get<any[]>('/api/v1/thesis/admin/grading-templates');
+      setGradingTemplates(response);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
     }
   };
 
@@ -555,7 +567,7 @@ export function HeadReviewSchedule() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Giảng viên phản biện 1</label>
                     <Select
@@ -582,6 +594,25 @@ export function HeadReviewSchedule() {
                       </SelectTrigger>
                       <SelectContent>
                         {/* TODO: Load from API */}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Form chấm điểm</label>
+                    <Select
+                      value={form.gradingTemplateId?.toString() || ''}
+                      onValueChange={(value) => updateScheduleForm(index, 'gradingTemplateId', Number(value))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn form chấm điểm..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {gradingTemplates.map((template) => (
+                          <SelectItem key={template.id} value={template.id.toString()}>
+                            {template.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

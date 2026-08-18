@@ -24,34 +24,45 @@ interface KanbanBoardProps {
   lists: KanbanList[];
   onOpenCreateDialog?: (listId?: number) => void;
   onAddList?: (name: string) => Promise<void>;
+  onTaskClick?: (task: Task) => void;
 }
 
-export function KanbanBoard({ tasks = [], lists = [], onOpenCreateDialog, onAddList }: KanbanBoardProps) {
+export function KanbanBoard({
+  tasks = [],
+  lists = [],
+  onOpenCreateDialog,
+  onAddList,
+  onTaskClick,
+}: KanbanBoardProps) {
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListName, setNewListName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   let columns: any[] = [];
   try {
     // Group tasks by list_id
-    columns = (Array.isArray(lists) ? lists : []).map(list => ({
+    columns = (Array.isArray(lists) ? lists : []).map((list) => ({
       id: list?.id?.toString() || Math.random().toString(),
       listId: list?.id,
       label: list?.name || 'Unknown List',
-      tasks: (Array.isArray(tasks) ? tasks : []).filter(t => t.list_id === list?.id)
+      tasks: (Array.isArray(tasks) ? tasks : []).filter(
+        (t) => t.list_id === list?.id,
+      ),
     }));
   } catch (err) {
     console.error('Error grouping lists:', err, { lists, tasks });
   }
 
   // Add an "Unassigned List" column if there are tasks without a list_id
-  const unassignedTasks = (Array.isArray(tasks) ? tasks : []).filter(t => !t.list_id);
+  const unassignedTasks = (Array.isArray(tasks) ? tasks : []).filter(
+    (t) => !t.list_id,
+  );
   if (unassignedTasks.length > 0) {
     columns.unshift({
       id: 'unassigned',
       listId: undefined,
       label: 'Chưa phân loại',
-      tasks: unassignedTasks
+      tasks: unassignedTasks,
     });
   }
 
@@ -75,7 +86,10 @@ export function KanbanBoard({ tasks = [], lists = [], onOpenCreateDialog, onAddL
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 w-full h-full min-h-[500px]">
       {columns.map((column) => (
-        <div key={column.id} className="flex-shrink-0 w-80 bg-zinc-50 rounded-xl flex flex-col max-h-full border border-zinc-200">
+        <div
+          key={column.id}
+          className="flex-shrink-0 w-80 bg-zinc-50 rounded-xl flex flex-col max-h-full border border-zinc-200"
+        >
           <div className="p-4 flex items-center justify-between border-b border-zinc-200 bg-zinc-50 rounded-t-xl sticky top-0 z-10">
             <h3 className="font-semibold text-zinc-900 flex items-center gap-2">
               {column.label}
@@ -83,13 +97,17 @@ export function KanbanBoard({ tasks = [], lists = [], onOpenCreateDialog, onAddL
                 {column.tasks.length}
               </span>
             </h3>
-            <div className="text-zinc-400 font-bold tracking-widest leading-none">...</div>
+            <div className="text-zinc-400 font-bold tracking-widest leading-none">
+              ...
+            </div>
           </div>
           <div className="p-3 overflow-y-auto flex-1 space-y-3 custom-scrollbar bg-zinc-50/50">
             {column.tasks.map((task) => (
-              <div 
-                key={task.id} 
-                className="bg-white hover:bg-zinc-100 p-3 rounded-lg border border-zinc-200 shadow-sm transition-colors cursor-pointer group"
+              <button
+                key={task.id}
+                type="button"
+                onClick={() => onTaskClick?.(task)}
+                className="w-full bg-white hover:bg-zinc-100 p-3 rounded-lg border border-zinc-200 shadow-sm transition-colors cursor-pointer group text-left"
               >
                 <div className="flex items-start gap-2">
                   <div className="mt-0.5 text-green-500 flex-shrink-0">
@@ -105,20 +123,25 @@ export function KanbanBoard({ tasks = [], lists = [], onOpenCreateDialog, onAddL
                     <p className="text-sm font-medium text-zinc-800 break-words leading-snug">
                       {task.task_name}
                     </p>
-                    {task.due_date && !isNaN(new Date(task.due_date).getTime()) && (
-                      <div className="flex items-center gap-1.5 mt-2 text-xs text-zinc-500">
-                        <Calendar className="w-3 h-3" />
-                        <span>{new Date(task.due_date).toLocaleDateString('vi-VN')}</span>
-                      </div>
-                    )}
+                    {task.due_date &&
+                      !isNaN(new Date(task.due_date).getTime()) && (
+                        <div className="flex items-center gap-1.5 mt-2 text-xs text-zinc-500">
+                          <Calendar className="w-3 h-3" />
+                          <span>
+                            {new Date(task.due_date).toLocaleDateString(
+                              'vi-VN',
+                            )}
+                          </span>
+                        </div>
+                      )}
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
-          
+
           <div className="p-3 bg-zinc-50/50 rounded-b-xl border-t border-zinc-200">
-            <button 
+            <button
               onClick={() => onOpenCreateDialog?.(column.listId)}
               className="flex items-center gap-2 w-full p-2 rounded-lg hover:bg-zinc-200 text-zinc-500 hover:text-zinc-700 transition-colors text-sm font-medium"
             >
@@ -128,7 +151,7 @@ export function KanbanBoard({ tasks = [], lists = [], onOpenCreateDialog, onAddL
           </div>
         </div>
       ))}
-      
+
       {/* Add another list button */}
       <div className="flex-shrink-0 w-80">
         {isAddingList ? (
@@ -147,14 +170,14 @@ export function KanbanBoard({ tasks = [], lists = [], onOpenCreateDialog, onAddL
               disabled={isSubmitting}
             />
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={handleAddList}
                 disabled={isSubmitting}
                 className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
               >
                 {isSubmitting ? 'Đang thêm...' : 'Thêm danh sách'}
               </button>
-              <button 
+              <button
                 onClick={() => setIsAddingList(false)}
                 className="p-1.5 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200 rounded-lg transition-colors"
               >
@@ -163,7 +186,7 @@ export function KanbanBoard({ tasks = [], lists = [], onOpenCreateDialog, onAddL
             </div>
           </div>
         ) : (
-          <button 
+          <button
             onClick={() => setIsAddingList(true)}
             className="flex items-center gap-2 w-full p-3 rounded-xl bg-zinc-50/50 hover:bg-zinc-100/80 text-zinc-500 hover:text-zinc-700 transition-colors border border-transparent hover:border-zinc-300/50 text-sm font-medium"
           >
