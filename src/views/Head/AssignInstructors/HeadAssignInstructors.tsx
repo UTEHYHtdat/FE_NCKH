@@ -1,1897 +1,465 @@
 import { useState, useEffect } from 'react';
-
-
-import { UserPlus, Search, Check, X, Users, Eye } from 'lucide-react';
-
-
+import { UserPlus, Search, Check, Users, FileText, AlertCircle, Sparkles, BookOpen, GraduationCap, CheckCircle2, RefreshCw } from 'lucide-react';
 import { PageLayout } from '@/components/layout/PageLayout';
-
-
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-
-
 import { Badge } from '@/components/ui/badge';
-
-
 import { Button } from '@/components/ui/button';
-
-
 import { Input } from '@/components/ui/input';
-
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-
 import { Modal } from '@/components/ui/Modal';
-
-
 import { useAuth } from '@/contexts/AuthContext';
+import { thesisRoundsService, instructorService, topicRegistrationService, apiClient } from '@/plugins/api';
+import type { ThesisRound } from '@/types/api';
 
-
-import { thesisRoundsService } from '@/plugins/api';
-
-
-import { instructorService } from '@/plugins/api';
-
-
-import type { ThesisRound, InstructorAssignment } from '@/types/api';
-
-
-
-
-
-type TabType = 'instructors' | 'reviewers';
-
-
-
-
+type TopicCategory = 'KLTN' | 'NCKH';
 
 interface Instructor {
-
-
   id: number;
-
-
   instructor_code: string;
-
-
   users: {
-
-
     full_name: string;
-
-
     email: string;
-
-
   };
-
-
   degree?: string;
-
-
   academic_title?: string;
-
-
   specialization?: string;
-
-
-  years_of_experience?: number;
-
-
 }
-
-
-
-
-
-interface SelectedInstructor extends Instructor {
-
-
-  quota: number;
-
-
-  notes?: string;
-
-
-}
-
-
-
-
-
-interface SelectedReviewer extends Instructor {
-
-
-  max_reviews: number;
-
-
-  notes?: string;
-
-
-}
-
-
-
-
 
 export function HeadAssignInstructors() {
-
-
   const { user } = useAuth();
-
-
   const userRole = user?.role || 'head';
 
-
-  const [activeTab, setActiveTab] = useState<TabType>('instructors');
-
-
+  const [activeCategory, setActiveCategory] = useState<TopicCategory>('KLTN');
   const [isLoading, setIsLoading] = useState(false);
-
-
   const [isFetchingRounds, setIsFetchingRounds] = useState(false);
-
-
+  const [isFetchingTopics, setIsFetchingTopics] = useState(false);
   const [isFetchingInstructors, setIsFetchingInstructors] = useState(false);
-
-
   const [error, setError] = useState<string | null>(null);
-
-
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  
-
-  
-
   const [rounds, setRounds] = useState<ThesisRound[]>([]);
-
-
-  const [instructors, setInstructors] = useState<Instructor[]>([]);
-
-
   const [selectedRound, setSelectedRound] = useState<ThesisRound | null>(null);
-
-
-  const [selectedInstructors, setSelectedInstructors] = useState<SelectedInstructor[]>([]);
-
-
-  const [selectedReviewers, setSelectedReviewers] = useState<SelectedReviewer[]>([]);
-
-
+  const [topics, setTopics] = useState<any[]>([]);
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-
+  // Modal State
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
+  const [selectedInstructorId, setSelectedInstructorId] = useState<number | null>(null);
 
-
-  const [recentlyAssignedInstructors, setRecentlyAssignedInstructors] = useState<SelectedInstructor[]>([]);
-
-
-  const [assignedInstructorIds, setAssignedInstructorIds] = useState<number[]>([]);
-
-
-  const [assignedInstructorsList, setAssignedInstructorsList] = useState<any[]>([]);
-
-
-
-
-
-  // Fetch thesis rounds on component mount
-
-
+  // 1. Tải danh sách đợt
   useEffect(() => {
-
-
     const fetchRounds = async () => {
-
-
       setIsFetchingRounds(true);
-
-
       setError(null);
-
-
       try {
-
-
         const data = await thesisRoundsService.getThesisRoundsForHead();
-
-
-        console.log('HeadAssignInstructors - API Response:', data);
-
-        
-
-        
-
-        // Handle different response formats
-
-
         let roundsArray: ThesisRound[] = [];
-
-
         if (Array.isArray(data)) {
-
-
           roundsArray = data;
-
-
         } else if (data && typeof data === 'object') {
-
-
           const dataObj = data as any;
-
-
-          // Check if it has a data property
-
-
           if (dataObj.data && Array.isArray(dataObj.data)) {
-
-
             roundsArray = dataObj.data;
-
-
           } else if (dataObj.success && dataObj.data && Array.isArray(dataObj.data)) {
-
-
             roundsArray = dataObj.data;
-
-
-          } else {
-
-
-            // Try to get values from the object
-
-
-            const values = Object.values(dataObj);
-
-
-            if (values.length > 0 && Array.isArray(values[0])) {
-
-
-              roundsArray = values[0];
-
-
-            } else {
-
-
-              roundsArray = values as ThesisRound[];
-
-
-            }
-
-
           }
-
-
         }
 
-        
-
-        
-
-        console.log('HeadAssignInstructors - Final rounds array:', roundsArray);
-
-        
-
-        
-
-        // Log status values for debugging
-
-
-        roundsArray.forEach((round: any) => {
-
-
-          console.log(`Round ${round.id} - Status: "${round.status}" (type: ${typeof round.status})`);
-
-
-        });
-
-        
-
-        
-
-        // Filter to only show Active rounds (case-insensitive to handle backend inconsistency)
-
-
-        const activeRounds = roundsArray.filter((round: any) => 
-
-
-          round.status?.toUpperCase() === 'ACTIVE'
-
-
-        );
-
-
-        console.log('HeadAssignInstructors - Active rounds only:', activeRounds);
-
-        
-
-        
-
-        setRounds(activeRounds);
-
-
+        const activeRounds = roundsArray.filter((r: any) => r.status?.toUpperCase() === 'ACTIVE');
+        setRounds(activeRounds.length > 0 ? activeRounds : roundsArray);
+        if (activeRounds.length > 0) {
+          setSelectedRound(activeRounds[0]);
+        }
       } catch (err: any) {
-
-
-        setError(err.message || 'Không thể tải danh sách đợt khóa luận');
-
-
+        setError(err.message || 'Không thể tải danh sách đợt');
       } finally {
-
-
         setIsFetchingRounds(false);
-
-
       }
-
-
     };
 
-
-
-
-
     fetchRounds();
-
-
   }, []);
 
+  // 2. Tải danh sách đề tài & nhóm sinh viên
+  const fetchTopics = async () => {
+    if (!selectedRound) return;
+    setIsFetchingTopics(true);
+    setError(null);
+    try {
+      const data = await topicRegistrationService.getRegistrationsForHead();
+      const rawTopics = Array.isArray(data) ? data : (data as any)?.data || [];
 
+      // Lọc theo round và loại hình (KLTN vs NCKH)
+      const filtered = rawTopics.filter((t: any) => {
+        const isSameRound = t.thesis_round_id === selectedRound.id;
+        const typeCode = (t.thesis_groups?.thesis_rounds?.thesis_types?.type_code || t.thesis_types?.type_code || 'KLTN').toUpperCase();
+        
+        if (!isSameRound) return false;
+        if (activeCategory === 'KLTN') {
+          return typeCode === 'KLTN' || typeCode.includes('THESIS') || typeCode.includes('KHOA_LUAN');
+        } else {
+          return typeCode !== 'KLTN' && !typeCode.includes('KHOA_LUAN');
+        }
+      });
 
-
-
-  // Fetch instructors when a round is selected
-
+      setTopics(filtered.length > 0 ? filtered : rawTopics.filter((t: any) => t.thesis_round_id === selectedRound.id));
+    } catch (err: any) {
+      console.error('Error fetching registrations:', err);
+      // Fallback: Thử tải qua API đề tài
+      try {
+        const res = await apiClient.get<any>(`/api/v1/thesis/admin/theses?thesisRoundId=${selectedRound.id}`);
+        setTopics(Array.isArray(res) ? res : res.data || []);
+      } catch {
+        setTopics([]);
+      }
+    } finally {
+      setIsFetchingTopics(false);
+    }
+  };
 
   useEffect(() => {
-    if (selectedRound) {
-      const fetchInstructorsAndAssignments = async () => {
+    fetchTopics();
+  }, [selectedRound, activeCategory]);
+
+  // 3. Tải danh sách giảng viên khi mở modal
+  useEffect(() => {
+    if (isAssignModalOpen) {
+      const fetchInstructors = async () => {
         setIsFetchingInstructors(true);
-        setError(null);
         try {
-          const data = await instructorService.getInstructors({
-            department_id: selectedRound.department_id,
-          });
-          let instructorsArray: any[] = [];
-          if (Array.isArray(data)) {
-            instructorsArray = data;
-          } else if (data && data.data && Array.isArray(data.data)) {
-            instructorsArray = data.data;
-          }
-          setInstructors(instructorsArray);
-
-          const assignmentsData = await thesisRoundsService.getInstructorAssignments(selectedRound.id);
-          let assignedArray: any[] = [];
-          if (assignmentsData && assignmentsData.data && Array.isArray(assignmentsData.data)) {
-            assignedArray = assignmentsData.data;
-          } else if (Array.isArray(assignmentsData)) {
-            assignedArray = assignmentsData;
-          }
-          
-          const ids = assignedArray.map((a: any) => a.instructor_id);
-          setAssignedInstructorIds(ids);
-
-          const assignedWithDetails = assignedArray.map((assignment: any) => {
-            const inst = instructorsArray.find(i => i.id === assignment.instructor_id);
-            if (inst) {
-              return {
-                ...inst,
-                quota: assignment.supervision_quota,
-                current_load: assignment.current_load,
-                notes: assignment.notes
-              };
-            }
-            return null;
-          }).filter(Boolean);
-          
-          setAssignedInstructorsList(assignedWithDetails);
-        } catch (err: any) {
-          setError(err.message || 'Không thể tải danh sách giáo viên');
+          const data = await instructorService.getInstructors();
+          const list = Array.isArray(data) ? data : (data as any)?.data || [];
+          setInstructors(list);
+        } catch (err) {
+          console.error('Error fetching instructors:', err);
         } finally {
           setIsFetchingInstructors(false);
         }
       };
 
-      fetchInstructorsAndAssignments();
+      fetchInstructors();
+    }
+  }, [isAssignModalOpen]);
 
+  const handleOpenAssignModal = (topic: any) => {
+    setSelectedTopic(topic);
+    setSelectedInstructorId(topic.instructor_id || topic.instructors?.id || null);
+    setIsAssignModalOpen(true);
+  };
 
+  const handleConfirmAssign = async () => {
+    if (!selectedTopic || !selectedInstructorId) {
+      setError('Vui lòng chọn một Giảng viên hướng dẫn');
+      return;
     }
 
+    setIsLoading(true);
+    setError(null);
+    setSuccessMessage(null);
 
-  }, [selectedRound]);
+    try {
+      // Cập nhật GVHD cho đề tài đăng ký
+      await apiClient.put(`/api/admin/topic-registrations/${selectedTopic.id}`, {
+        instructor_id: selectedInstructorId,
+      });
 
+      setSuccessMessage('Phân công Giảng viên hướng dẫn thành công!');
+      setIsAssignModalOpen(false);
+      setSelectedTopic(null);
+      fetchTopics();
+    } catch (err: any) {
+      // Thử endpoint fallback
+      try {
+        await apiClient.put(`/api/v1/thesis/admin/theses/${selectedTopic.id || selectedTopic.thesis_id}/assign-supervisor`, {
+          supervisorId: selectedInstructorId,
+        });
+        setSuccessMessage('Phân công Giảng viên hướng dẫn thành công!');
+        setIsAssignModalOpen(false);
+        setSelectedTopic(null);
+        fetchTopics();
+      } catch (fallbackErr: any) {
+        setError(fallbackErr.message || err.message || 'Lỗi khi phân công GVHD');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-
-
-
-  const filteredInstructors = instructors.filter(instructor => {
+  const filteredTopics = topics.filter((t) => {
     const searchLower = searchTerm.toLowerCase();
+    const title = (t.proposed_topics?.topic_title || t.topic_title || t.self_proposed_title || '').toLowerCase();
+    const groupName = (t.thesis_groups?.group_name || '').toLowerCase();
+    const members = (t.thesis_groups?.thesis_group_members || t.thesis_members || [])
+      .map((m: any) => `${m.students?.users?.full_name} ${m.students?.student_code}`)
+      .join(' ')
+      .toLowerCase();
 
-    return (
-      (instructor.users?.full_name || '').toLowerCase().includes(searchLower) ||
-      (instructor.instructor_code || '').toLowerCase().includes(searchLower) ||
-      (instructor.specialization || '').toLowerCase().includes(searchLower)
-    );
+    return title.includes(searchLower) || groupName.includes(searchLower) || members.includes(searchLower);
   });
 
-  const unassignedFilteredInstructors = filteredInstructors.filter(
-    instructor => !assignedInstructorIds.includes(instructor.id)
-  );
-
-
-
-
-
-  const handleSelectRound = (roundId: string) => {
-    const round = rounds.find(r => r.id === Number(roundId));
-    setSelectedRound(round || null);
-    setSelectedInstructors([]);
-    setSelectedReviewers([]);
-    setAssignedInstructorIds([]);
-    setAssignedInstructorsList([]);
-    setRecentlyAssignedInstructors([]);
-  };
-
-
-
-
-
-  const handleToggleInstructor = (instructor: Instructor) => {
-
-
-    const isSelected = selectedInstructors.some(si => si.id === instructor.id);
-
-    
-
-    
-
-    if (isSelected) {
-
-
-      setSelectedInstructors(prev => prev.filter(si => si.id !== instructor.id));
-
-
-    } else {
-
-
-      setSelectedInstructors(prev => [
-
-
-        ...prev,
-
-
-        {
-
-
-          ...instructor,
-
-
-          quota: 5, // Default quota
-
-
-          notes: '',
-
-
-        }
-
-
-      ]);
-
-
-    }
-
-
-  };
-
-
-
-
-
-  const handleToggleReviewer = (instructor: Instructor) => {
-
-
-    const isSelected = selectedReviewers.some(sr => sr.id === instructor.id);
-
-    
-
-    
-
-    if (isSelected) {
-
-
-      setSelectedReviewers(prev => prev.filter(sr => sr.id !== instructor.id));
-
-
-    } else {
-
-
-      setSelectedReviewers(prev => [
-
-
-        ...prev,
-
-
-        {
-
-
-          ...instructor,
-
-
-          max_reviews: 10, // Default max reviews
-
-
-          notes: '',
-
-
-        }
-
-
-      ]);
-
-
-    }
-
-
-  };
-
-
-
-
-
-  const handleQuotaChange = (instructorId: number, quota: number) => {
-
-
-    setSelectedInstructors(prev =>
-
-
-      prev.map(si =>
-
-
-        si.id === instructorId ? { ...si, quota } : si
-
-
-      )
-
-
-    );
-
-
-  };
-
-
-
-
-
-  const handleMaxReviewsChange = (instructorId: number, maxReviews: number) => {
-
-
-    setSelectedReviewers(prev =>
-
-
-      prev.map(sr =>
-
-
-        sr.id === instructorId ? { ...sr, max_reviews: maxReviews } : sr
-
-
-      )
-
-
-    );
-
-
-  };
-
-
-
-
-
-  const handleNotesChange = (instructorId: number, notes: string) => {
-
-
-    setSelectedInstructors(prev =>
-
-
-      prev.map(si =>
-
-
-        si.id === instructorId ? { ...si, notes } : si
-
-
-      )
-
-
-    );
-
-
-    setSelectedReviewers(prev =>
-
-
-      prev.map(sr =>
-
-
-        sr.id === instructorId ? { ...sr, notes } : sr
-
-
-      )
-
-
-    );
-
-
-  };
-
-
-
-
-
-  const handleAssignInstructors = async () => {
-
-
-    if (!selectedRound || selectedInstructors.length === 0) {
-
-
-      setError('Vui lòng chọn đợt khóa luận và ít nhất một giáo viên hướng dẫn');
-
-
-      return;
-
-
-    }
-
-
-
-
-
-    setIsLoading(true);
-
-
-    setError(null);
-
-
-    setSuccessMessage(null);
-
-
-
-
-
-    try {
-
-
-      // Log current round status for debugging
-
-
-      console.log('Current round status:', selectedRound.status);
-
-
-      console.log('Status type:', typeof selectedRound.status);
-
-
-      console.log('Status uppercase:', selectedRound.status?.toUpperCase());
-
-
-      console.log('Round details:', selectedRound);
-
-
-
-
-
-      // Validate required fields
-
-
-      const assignments = selectedInstructors.map(si => ({
-
-
-        instructor_id: si.id,
-
-
-        quota: si.quota || 5, // Default quota if not set
-
-
-        notes: si.notes || ''
-
-
-      }));
-
-
-
-
-
-      console.log('Instructor assignments:', assignments);
-
-
-
-
-
-      // Use the format expected by backend: camelCase instructorIds and supervisionQuota
-
-
-      const requestData = {
-
-
-        instructorIds: assignments.map(a => a.instructor_id),
-
-
-        supervisionQuota: assignments[0]?.quota || 5
-
-
-      };
-
-
-
-
-
-      console.log('Sending request with data:', requestData);
-
-      
-
-      
-
-      await thesisRoundsService.assignInstructorsToRound(selectedRound.id, requestData);
-      setSuccessMessage('Phân công giáo viên hướng dẫn thành công!');
-      setIsAssignModalOpen(false);
-      setSelectedInstructors([]);
-
-      const assignmentsData = await thesisRoundsService.getInstructorAssignments(selectedRound.id);
-      let assignedArray: any[] = [];
-      if (assignmentsData && assignmentsData.data && Array.isArray(assignmentsData.data)) {
-        assignedArray = assignmentsData.data;
-      } else if (Array.isArray(assignmentsData)) {
-        assignedArray = assignmentsData;
-      }
-      
-      const ids = assignedArray.map((a: any) => a.instructor_id);
-      setAssignedInstructorIds(ids);
-
-      const assignedWithDetails = assignedArray.map((assignment: any) => {
-        const inst = instructors.find(i => i.id === assignment.instructor_id);
-        if (inst) {
-          return {
-            ...inst,
-            quota: assignment.supervision_quota,
-            current_load: assignment.current_load,
-            notes: assignment.notes
-          };
-        }
-        return null;
-      }).filter(Boolean);
-      
-      setAssignedInstructorsList(assignedWithDetails);
-      setRecentlyAssignedInstructors([]);
-
-
-    } catch (err: any) {
-
-
-      console.error('Assign instructors error:', err);
-
-
-      console.error('Error details:', JSON.stringify(err, null, 2));
-
-      
-
-      
-
-      const errorMessage = err.message || 'Có lỗi xảy ra khi phân công giáo viên hướng dẫn';
-
-      
-
-      
-
-      // Check if it's a status validation error
-
-
-      if (errorMessage.includes('Preparing') || errorMessage.includes('Active')) {
-
-
-        setError(`Lỗi: ${errorMessage}. Trạng thái hiện tại của đợt: ${selectedRound.status} (type: ${typeof selectedRound.status})`);
-
-
-      } else {
-
-
-        setError(errorMessage);
-
-
-      }
-
-
-    } finally {
-
-
-      setIsLoading(false);
-
-
-    }
-
-
-  };
-
-
-
-
-
-  const handleAssignReviewers = async () => {
-
-
-    if (!selectedRound || selectedReviewers.length === 0) {
-
-
-      setError('Vui lòng chọn đợt khóa luận và ít nhất một giáo viên phản biện');
-
-
-      return;
-
-
-    }
-
-
-
-
-
-    setIsLoading(true);
-
-
-    setError(null);
-
-
-    setSuccessMessage(null);
-
-
-
-
-
-    try {
-
-
-      // Note: This would need a specific API endpoint for assigning reviewers
-
-
-      // For now, we'll simulate the success
-
-
-      setSuccessMessage('Phân công giáo viên phản biện thành công!');
-
-
-      setIsAssignModalOpen(false);
-
-
-      setSelectedReviewers([]);
-
-
-    } catch (err: any) {
-
-
-      setError(err.message || 'Có lỗi xảy ra khi phân công giáo viên phản biện');
-
-
-    } finally {
-
-
-      setIsLoading(false);
-
-
-    }
-
-
-  };
-
-
-
-
-
-  const handleAssign = async () => {
-
-
-    if (activeTab === 'instructors') {
-
-
-      await handleAssignInstructors();
-
-
-    } else {
-
-
-      await handleAssignReviewers();
-
-
-    }
-
-
-  };
-
-
-
-
-
-
-
+  const assignedCount = topics.filter((t) => !!(t.instructor_id || t.instructors?.id || t.supervisor_id)).length;
+  const unassignedCount = topics.length - assignedCount;
 
   return (
-
-
     <PageLayout
-
-
       userRole={userRole as any}
-
-
-      userName={user?.fullName || 'PGS. TS. Nguyễn Văn A'}
-
-
-      title="Phân công giáo viên"
-
-
-      subtitle="Phân công giáo viên hướng dẫn và phản biện cho đợt đề tài khóa luận"
-
-
+      userName={user?.fullName || 'Trưởng bộ môn'}
+      title="Phân công Giảng viên Hướng dẫn"
+      subtitle="Phân công GVHD cho từng Nhóm sinh viên ứng với Đề tài Khóa luận và NCKH"
     >
-
-
-      {/* Tab Navigation */}
-
-
-      <Card className="mb-6">
-
-
-        <CardContent className="p-4">
-
-
-          <div className="flex gap-4">
-
-
-            <Button
-
-
-              variant={activeTab === 'instructors' ? 'default' : 'outline'}
-
-
-              onClick={() => setActiveTab('instructors')}
-
-
-              className="flex items-center gap-2"
-
-
-            >
-
-
-              <Users className="w-4 h-4" />
-
-
-              Giáo viên hướng dẫn
-
-
-            </Button>
-
-
-            <Button
-
-
-              variant={activeTab === 'reviewers' ? 'default' : 'outline'}
-
-
-              onClick={() => setActiveTab('reviewers')}
-
-
-              className="flex items-center gap-2"
-
-
-            >
-
-
-              <Eye className="w-4 h-4" />
-
-
-              Giáo viên phản biện
-
-
-            </Button>
-
-
-          </div>
-
-
-        </CardContent>
-
-
-      </Card>
-
-
-      {/* Select Thesis Round */}
-
-
-      <Card className="mb-6">
-
-
-        <CardHeader>
-
-
-          <CardTitle>Chọn đợt khóa luận</CardTitle>
-
-
-          <CardDescription>
-
-
-            Chọn đợt khóa luận để phân công {activeTab === 'instructors' ? 'giáo viên hướng dẫn' : 'giáo viên phản biện'}
-
-
-          </CardDescription>
-
-
-        </CardHeader>
-
-
-        <CardContent>
-
-
-          {isFetchingRounds ? (
-
-
-            <p className="text-muted-foreground">Đang tải danh sách đợt khóa luận...</p>
-
-
-          ) : rounds.length === 0 ? (
-
-
-            <p className="text-muted-foreground">Không có đợt khóa luận nào</p>
-
-
-          ) : (
-
-
-            <Select value={selectedRound?.id.toString() || ''} onValueChange={handleSelectRound}>
-
-
-              <SelectTrigger>
-
-
-                <SelectValue placeholder="Chọn đợt khóa luận..." />
-
-
-              </SelectTrigger>
-
-
-              <SelectContent>
-
-
-                {rounds.map(round => (
-
-
-                  <SelectItem key={round.id} value={round.id.toString()}>
-
-
-                    {round.round_name} ({round.round_code || 'ĐK' + round.id}) - {round.academic_year}
-
-
-                  </SelectItem>
-
-
-                ))}
-
-
-              </SelectContent>
-
-
-            </Select>
-
-
-          )}
-
-
-        </CardContent>
-
-
-      </Card>
-
-
-
-
-
-      {/* Instructor Selection */}
-
-
-      {selectedRound && (
-
+      {/* 2 Tab: Khóa luận tốt nghiệp & NCKH */}
+      <div className="flex gap-2 mb-6">
+        <Button
+          variant={activeCategory === 'KLTN' ? 'default' : 'outline'}
+          onClick={() => setActiveCategory('KLTN')}
+          className="flex items-center gap-2"
+        >
+          <GraduationCap className="w-4 h-4" />
+          Khóa luận tốt nghiệp
+        </Button>
+        <Button
+          variant={activeCategory === 'NCKH' ? 'default' : 'outline'}
+          onClick={() => setActiveCategory('NCKH')}
+          className="flex items-center gap-2"
+        >
+          <BookOpen className="w-4 h-4" />
+          Nghiên cứu khoa học (NCKH) & Đồ án
+        </Button>
+      </div>
+
+      {/* Thống kê nhanh & Đợt */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card className="md:col-span-1">
+          <CardContent className="p-4">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+              Chọn đợt:
+            </label>
+            {isFetchingRounds ? (
+              <p className="text-xs text-muted-foreground">Đang tải đợt...</p>
+            ) : (
+              <Select
+                value={selectedRound?.id.toString() || ''}
+                onValueChange={(val) => setSelectedRound(rounds.find((r) => r.id === Number(val)) || null)}
+              >
+                <SelectTrigger className="text-xs">
+                  <SelectValue placeholder="Chọn đợt..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {rounds.map((round) => (
+                    <SelectItem key={round.id} value={round.id.toString()}>
+                      {round.round_name} ({round.round_code || 'ĐK' + round.id})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
-
-
-          <CardHeader>
-
-
-            <div className="flex items-center justify-between">
-
-
-              <div>
-
-
-                <CardTitle>
-                  {activeTab === 'instructors' ? 'Giáo viên hướng dẫn chưa phân công' : 'Giáo viên phản biện chưa phân công'}
-                </CardTitle>
-                <CardDescription>
-                  Chọn {activeTab === 'instructors' ? 'giáo viên hướng dẫn' : 'giáo viên phản biện'} để thêm vào đợt: {selectedRound.round_name}
-                </CardDescription>
-
-
-              </div>
-
-
-              <Badge variant="secondary">
-
-
-                {activeTab === 'instructors' ? selectedInstructors.length : selectedReviewers.length} đã chọn
-
-
-              </Badge>
-
-
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground">Đã phân công GVHD</p>
+              <p className="text-2xl font-bold text-green-600">{assignedCount}</p>
             </div>
+            <div className="w-10 h-10 bg-green-100 dark:bg-green-950/40 rounded-lg flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
 
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground">Chưa phân công GVHD</p>
+              <p className="text-2xl font-bold text-amber-600">{unassignedCount}</p>
+            </div>
+            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-950/40 rounded-lg flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-amber-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-          </CardHeader>
+      {/* Messages */}
+      {successMessage && (
+        <div className="mb-4 p-3.5 bg-green-50 dark:bg-green-950/30 border border-green-200 text-green-800 dark:text-green-300 rounded-lg text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+      {error && (
+        <div className="mb-4 p-3.5 bg-red-50 dark:bg-red-950/30 border border-red-200 text-red-800 dark:text-red-300 rounded-lg text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
-
-          <CardContent>
-
-
-            {/* Search */}
-
-
-            <div className="mb-6">
-
-
+      {/* Danh sách đề tài & nhóm sinh viên */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base">
+                Danh sách đề tài & Nhóm sinh viên ({activeCategory === 'KLTN' ? 'Khóa luận' : 'NCKH'})
+              </CardTitle>
+              <CardDescription>
+                Đợt: {selectedRound?.round_name || 'Chưa chọn'} • Tổng số: {filteredTopics.length} đề tài
+              </CardDescription>
+            </div>
+            <div className="w-full sm:w-72">
               <div className="relative">
-
-
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-
-
                 <Input
-
-
-                  placeholder="Tìm kiếm giáo viên theo tên, mã, hoặc chuyên môn..."
-
-
-                  className="pl-10"
-
-
+                  placeholder="Tìm đề tài, sinh viên, nhóm..."
+                  className="pl-9 text-xs"
                   value={searchTerm}
-
-
                   onChange={(e) => setSearchTerm(e.target.value)}
-
-
                 />
-
-
               </div>
-
-
             </div>
-
-
-
-
-
-            {/* Instructor List */}
-            {isFetchingInstructors ? (
-              <p className="text-center py-8 text-muted-foreground">Đang tải danh sách giáo viên...</p>
-            ) : unassignedFilteredInstructors.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">
-                {searchTerm ? 'Không tìm thấy giáo viên chưa phân công nào phù hợp' : 'Tất cả giáo viên đã được phân công hoặc không có giáo viên nào'}
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {unassignedFilteredInstructors.map((instructor) => {
-
-
-                  const isSelected = activeTab === 'instructors' 
-
-
-                    ? selectedInstructors.some(si => si.id === instructor.id)
-
-
-                    : selectedReviewers.some(sr => sr.id === instructor.id);
-
-
-                  return (
-
-
-                    <div
-
-
-                      key={instructor.id}
-
-
-                      className={`p-4 rounded-lg border transition-colors cursor-pointer ${
-
-
-                        isSelected 
-
-
-                          ? 'border-primary bg-primary/5' 
-
-
-                          : 'border-border hover:bg-muted/50'
-
-
-                      }`}
-
-
-                      onClick={() => activeTab === 'instructors' ? handleToggleInstructor(instructor) : handleToggleReviewer(instructor)}
-
-
-                    >
-
-
-                      <div className="flex items-start justify-between">
-
-
-                        <div className="flex-1">
-
-
-                          <div className="flex items-center gap-3 mb-2">
-
-
-                            <h3 className="font-semibold">{instructor.users.full_name}</h3>
-
-
-                            {isSelected && (
-
-
-                              <Check className="w-5 h-5 text-primary" />
-
-
-                            )}
-
-
-                          </div>
-
-
-                          <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
-
-
-                            <div>
-
-
-                              <span className="font-medium">Mã GV: </span>
-
-
-                              {instructor.instructor_code}
-
-
-                            </div>
-
-
-                            <div>
-
-
-                              <span className="font-medium">Email: </span>
-
-
-                              {instructor.users.email}
-
-
-                            </div>
-
-
-                            {instructor.academic_title && (
-
-
-                              <div>
-
-
-                                <span className="font-medium">Học hàm: </span>
-
-
-                                {instructor.academic_title}
-
-
-                              </div>
-
-
-                            )}
-
-
-                            {instructor.degree && (
-
-
-                              <div>
-
-
-                                <span className="font-medium">Học vị: </span>
-
-
-                                {instructor.degree}
-
-
-                              </div>
-
-
-                            )}
-
-
-                            {instructor.specialization && (
-
-
-                              <div className="col-span-2">
-
-
-                                <span className="font-medium">Chuyên môn: </span>
-
-
-                                {instructor.specialization}
-
-
-                              </div>
-
-
-                            )}
-
-
-                          </div>
-
-
-                        </div>
-
-
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isFetchingTopics ? (
+            <p className="text-center py-12 text-muted-foreground text-xs">Đang tải danh sách đề tài...</p>
+          ) : filteredTopics.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <BookOpen className="w-10 h-10 mx-auto mb-2 opacity-40" />
+              <p className="font-medium text-foreground text-sm">Chưa có đề tài nào trong danh mục này</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredTopics.map((topic, idx) => {
+                const title = topic.proposed_topics?.topic_title || topic.topic_title || topic.self_proposed_title || 'Đề tài chưa đặt tên';
+                const group = topic.thesis_groups;
+                const members = group?.thesis_group_members || topic.thesis_members || [];
+                const supervisor = topic.instructors || topic.supervisor;
+                const hasSupervisor = !!supervisor;
+
+                return (
+                  <div
+                    key={topic.id || idx}
+                    className="p-4 rounded-lg border border-border hover:border-primary/40 bg-card hover:bg-muted/10 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <h4 className="font-semibold text-sm text-foreground line-clamp-1">{title}</h4>
+                        <Badge variant="outline" className="text-[10px]">
+                          {activeCategory === 'KLTN' ? 'Khóa luận' : 'NCKH'}
+                        </Badge>
+                        <Badge variant={hasSupervisor ? 'default' : 'secondary'} className="text-[10px]">
+                          {hasSupervisor ? 'Đã có GVHD' : 'Chưa phân công'}
+                        </Badge>
                       </div>
 
-
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4 text-xs text-muted-foreground">
+                        <div>
+                          <span className="font-medium text-foreground">Nhóm / Sinh viên: </span>
+                          <span>
+                            {members.map((m: any) => `${m.students?.users?.full_name || 'SV'} (${m.students?.student_code || 'N/A'})`).join(', ') || 'Chưa rõ'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-medium text-foreground">GVHD: </span>
+                          <span className={hasSupervisor ? 'text-primary font-semibold' : 'italic text-amber-600'}>
+                            {hasSupervisor ? `${supervisor.users?.full_name || supervisor.full_name} (${supervisor.instructor_code})` : 'Chưa có GVHD'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
-
-                  );
-
-
-                })}
-
-
-              </div>
-
-
-            )}
-
-
-
-
-
-            {/* Actions */}
-
-
-            {(activeTab === 'instructors' ? selectedInstructors.length > 0 : selectedReviewers.length > 0) && (
-
-
-              <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-border">
-
-
-                <Button
-
-
-                  variant="ghost"
-
-
-                  onClick={() => activeTab === 'instructors' ? setSelectedInstructors([]) : setSelectedReviewers([])}
-
-
-                >
-
-
-                  Hủy chọn
-
-
-                </Button>
-
-
-                <Button
-
-
-                  onClick={() => setIsAssignModalOpen(true)}
-
-
-                  disabled={activeTab === 'instructors' ? selectedInstructors.length === 0 : selectedReviewers.length === 0}
-
-
-                >
-
-
-                  <UserPlus className="w-4 h-4 mr-2" />
-
-
-                  Xác nhận phân công ({activeTab === 'instructors' ? selectedInstructors.length : selectedReviewers.length})
-
-
-                </Button>
-
-
-              </div>
-
-
-            )}
-
-
-          </CardContent>
-
-
-        </Card>
-
-
-      )}
-
-
-
-
-
-      {/* Success/Error Messages */}
-
-
-      {successMessage && (
-
-
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md text-green-800">
-
-
-          {successMessage}
-
-
-        </div>
-
-
-      )}
-
-
-      {error && (
-
-
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-800">
-
-
-          {error}
-
-
-        </div>
-
-
-      )}
-
-
-
-
-
-      {/* Assigned Instructors Table */}
-      {selectedRound && (
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Giáo viên đã được phân công</CardTitle>
-                <CardDescription>
-                  Danh sách giáo viên hướng dẫn đã được thêm vào đợt: {selectedRound.round_name}
-                </CardDescription>
-              </div>
-              <Badge variant="secondary">{assignedInstructorsList.length}</Badge>
+                    <div className="shrink-0 flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenAssignModal(topic)}
+                        variant={hasSupervisor ? 'outline' : 'default'}
+                        className={!hasSupervisor ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+                      >
+                        <UserPlus className="w-4 h-4 mr-1.5" />
+                        {hasSupervisor ? 'Đổi GVHD' : 'Phân công GVHD'}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </CardHeader>
-          <CardContent>
-            {assignedInstructorsList.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">Chưa có giáo viên nào được phân công vào đợt này.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Mã GV</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Họ và tên</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Email</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Học hàm</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Học vị</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Chuyên môn</th>
-                      <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Số nhóm tối đa</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Ghi chú</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {assignedInstructorsList.map((instructor) => (
-                      <tr key={instructor.id} className="border-b border-border hover:bg-muted/50 transition-colors">
-                        <td className="py-3 px-4 text-sm font-medium">{instructor.instructor_code}</td>
-                        <td className="py-3 px-4">
-                          <p className="font-medium text-sm">{instructor.users?.full_name}</p>
-                        </td>
-                        <td className="py-3 px-4 text-sm">{instructor.users?.email}</td>
-                        <td className="py-3 px-4 text-sm">{instructor.academic_title || '-'}</td>
-                        <td className="py-3 px-4 text-sm">{instructor.degree || '-'}</td>
-                        <td className="py-3 px-4 text-sm">{instructor.specialization || '-'}</td>
-                        <td className="py-3 px-4 text-sm text-center">{instructor.quota}</td>
-                        <td className="py-3 px-4 text-sm">{instructor.notes || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
-
-
-
-
-      {/* Assign Modal */}
-
-
+      {/* Modal Phân công GVHD */}
       <Modal
-
-
         isOpen={isAssignModalOpen}
-
-
         onClose={() => setIsAssignModalOpen(false)}
-
-
-        title={activeTab === 'instructors' ? 'Xác nhận phân công giáo viên hướng dẫn' : 'Xác nhận phân công giáo viên phản biện'}
-
-
+        title="Phân công Giảng viên hướng dẫn"
         size="lg"
-
-
       >
-
-
-        <div className="space-y-4">
-
-
-          <div className="p-4 bg-muted/50 rounded-lg">
-
-
-            <p className="text-sm">
-
-
-              <span className="font-medium">Đợt khóa luận:</span> {selectedRound?.round_name}
-
-
-            </p>
-
-
-            <p className="text-sm mt-1">
-
-
-              <span className="font-medium">Số giáo viên:</span> {activeTab === 'instructors' ? selectedInstructors.length : selectedReviewers.length}
-
-
-            </p>
-
-
-          </div>
-
-
-
-
-
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-
-
-            {activeTab === 'instructors' ? (
-
-
-              selectedInstructors.map((instructor) => (
-
-
-                <div key={instructor.id} className="p-4 border border-border rounded-lg">
-
-
-                  <div className="flex items-start justify-between mb-3">
-
-
-                    <div>
-
-
-                      <h4 className="font-medium">{instructor.users.full_name}</h4>
-
-
-                      <p className="text-sm text-muted-foreground">{instructor.instructor_code}</p>
-
-
-                    </div>
-
-
-                    <Button
-
-
-                      size="sm"
-
-
-                      variant="ghost"
-
-
-                      onClick={() => handleToggleInstructor(instructor)}
-
-
-                    >
-
-
-                      <X className="w-4 h-4" />
-
-
-                    </Button>
-
-
-                  </div>
-
-
-                  <div className="grid grid-cols-2 gap-4">
-
-
-                    <div>
-
-
-                      <label className="block text-sm font-medium mb-1">
-
-
-                        Số nhóm tối đa
-
-
-                      </label>
-
-
-                      <Input
-
-
-                        type="number"
-
-
-                        min="1"
-
-
-                        max="20"
-
-
-                        value={instructor.quota}
-
-
-                        onChange={(e) => handleQuotaChange(instructor.id, Number(e.target.value))}
-
-
-                      />
-
-
-                    </div>
-
-
-                    <div>
-
-
-                      <label className="block text-sm font-medium mb-1">
-
-
-                        Ghi chú
-
-
-                      </label>
-
-
-                      <Input
-
-
-                        placeholder="Ghi chú (tùy chọn)"
-
-
-                        value={instructor.notes || ''}
-
-
-                        onChange={(e) => handleNotesChange(instructor.id, e.target.value)}
-
-
-                      />
-
-
-                    </div>
-
-
-                  </div>
-
-
+        {selectedTopic && (
+          <div className="space-y-4">
+            <div className="p-3.5 bg-muted/40 rounded-lg border border-border text-xs space-y-1.5">
+              <p>
+                <strong className="text-foreground">Đề tài:</strong> {selectedTopic.proposed_topics?.topic_title || selectedTopic.topic_title || selectedTopic.self_proposed_title}
+              </p>
+              <p>
+                <strong className="text-foreground">Nhóm SV:</strong>{' '}
+                {(selectedTopic.thesis_groups?.thesis_group_members || []).map((m: any) => `${m.students?.users?.full_name} (${m.students?.student_code})`).join(', ') || 'Sinh viên'}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">
+                Chọn Giảng viên hướng dẫn trong bộ môn <span className="text-destructive">*</span>
+              </label>
+
+              {isFetchingInstructors ? (
+                <p className="text-xs text-muted-foreground py-4 text-center">Đang tải danh sách giảng viên...</p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {instructors.map((inst) => {
+                    const isSelected = selectedInstructorId === inst.id;
+                    return (
+                      <div
+                        key={inst.id}
+                        onClick={() => setSelectedInstructorId(inst.id)}
+                        className={`p-3 rounded-lg border text-xs cursor-pointer transition-all flex items-center justify-between ${
+                          isSelected
+                            ? 'border-primary bg-primary/10 font-semibold'
+                            : 'border-border hover:bg-muted/40'
+                        }`}
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{inst.users?.full_name}</p>
+                          <p className="text-muted-foreground font-mono mt-0.5">
+                            Mã GV: {inst.instructor_code} • {inst.degree || 'Giảng viên'}
+                            {inst.specialization ? ` • Chuyên ngành: ${inst.specialization}` : ''}
+                          </p>
+                        </div>
+                        {isSelected && <Check className="w-5 h-5 text-primary shrink-0" />}
+                      </div>
+                    );
+                  })}
                 </div>
-
-
-              ))
-
-
-            ) : (
-
-
-              selectedReviewers.map((reviewer) => (
-
-
-                <div key={reviewer.id} className="p-4 border border-border rounded-lg">
-
-
-                  <div className="flex items-start justify-between mb-3">
-
-
-                    <div>
-
-
-                      <h4 className="font-medium">{reviewer.users.full_name}</h4>
-
-
-                      <p className="text-sm text-muted-foreground">{reviewer.instructor_code}</p>
-
-
-                    </div>
-
-
-                    <Button
-
-
-                      size="sm"
-
-
-                      variant="ghost"
-
-
-                      onClick={() => handleToggleReviewer(reviewer)}
-
-
-                    >
-
-
-                      <X className="w-4 h-4" />
-
-
-                    </Button>
-
-
-                  </div>
-
-
-                  <div className="grid grid-cols-2 gap-4">
-
-
-                    <div>
-
-
-                      <label className="block text-sm font-medium mb-1">
-
-
-                        Số phản biện tối đa
-
-
-                      </label>
-
-
-                      <Input
-
-
-                        type="number"
-
-
-                        min="1"
-
-
-                        max="50"
-
-
-                        value={reviewer.max_reviews}
-
-
-                        onChange={(e) => handleMaxReviewsChange(reviewer.id, Number(e.target.value))}
-
-
-                      />
-
-
-                    </div>
-
-
-                    <div>
-
-
-                      <label className="block text-sm font-medium mb-1">
-
-
-                        Ghi chú
-
-
-                      </label>
-
-
-                      <Input
-
-
-                        placeholder="Ghi chú (tùy chọn)"
-
-
-                        value={reviewer.notes || ''}
-
-
-                        onChange={(e) => handleNotesChange(reviewer.id, e.target.value)}
-
-
-                      />
-
-
-                    </div>
-
-
-                  </div>
-
-
-                </div>
-
-
-              ))
-
-
-            )}
-
-
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-border">
+              <Button variant="outline" onClick={() => setIsAssignModalOpen(false)} disabled={isLoading}>
+                Hủy
+              </Button>
+              <Button
+                onClick={handleConfirmAssign}
+                disabled={isLoading || !selectedInstructorId}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {isLoading ? 'Đang lưu...' : 'Xác nhận phân công GVHD'}
+              </Button>
+            </div>
           </div>
-
-
-
-
-
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-
-
-            <Button
-
-
-              variant="ghost"
-
-
-              onClick={() => setIsAssignModalOpen(false)}
-
-
-              disabled={isLoading}
-
-
-            >
-
-
-              Hủy
-
-
-            </Button>
-
-
-            <Button
-
-
-              onClick={handleAssign}
-
-
-              disabled={isLoading || (activeTab === 'instructors' ? selectedInstructors.length === 0 : selectedReviewers.length === 0)}
-
-
-            >
-
-
-              {isLoading ? 'Đang phân công...' : 'Xác nhận phân công'}
-
-
-            </Button>
-
-
-          </div>
-
-
-        </div>
-
-
+        )}
       </Modal>
-
-
     </PageLayout>
-
-
   );
-
-
 }
-
-
