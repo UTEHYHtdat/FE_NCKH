@@ -13,6 +13,9 @@ import { councilService, thesisRoundsService } from '@/plugins/api';
 import type { Council, ThesisRound } from '@/types/api';
 import { translateStatus, getStatusBadgeVariant } from '@/helpers/constant';
 
+import { ExcelBatchActions } from '@/components/shared/ExcelBatchActions';
+import { excelBatchService } from '@/plugins/api';
+
 export function DefenseCouncils() {
   const { user } = useAuth();
   const userRole = user?.role || 'head';
@@ -91,10 +94,16 @@ export function DefenseCouncils() {
       title="Hội đồng bảo vệ"
       subtitle="Quản lý các hội đồng bảo vệ khóa luận"
       actions={
-        <Button onClick={() => setIsModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Tạo hội đồng mới
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExcelBatchActions
+            exportUrl={excelBatchService.getDefenseScheduleExportUrl(roundFilter)}
+            exportLabel="Xuất Lịch Hội đồng (Excel)"
+          />
+          <Button onClick={() => setIsModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Tạo hội đồng mới
+          </Button>
+        </div>
       }
     >
       {/* Filters */}

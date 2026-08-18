@@ -5,11 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { gradingService } from '@/plugins/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { ModalGradeReview } from './ModalGradeReview';
 
 export function Scores() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [scoreData, setScoreData] = useState<any>(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewType, setReviewType] = useState<any>('DEFENSE');
+  const [originalScore, setOriginalScore] = useState(0);
 
   useEffect(() => {
     const fetchScores = async () => {
@@ -95,7 +100,21 @@ export function Scores() {
         <CardContent className="p-5">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
             <h3 className="text-base font-bold text-foreground">{scoreData.topic_title}</h3>
-            <Badge variant="blue">{scoreData.round_name || 'Đợt khóa luận'}</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="blue">{scoreData.round_name || 'Đợt khóa luận'}</Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setReviewType('DEFENSE');
+                  setOriginalScore(defense?.score || finalScore || 0);
+                  setReviewModalOpen(true);
+                }}
+                className="text-xs h-7 gap-1 border-amber-500/40 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-300"
+              >
+                Xin phúc khảo điểm
+              </Button>
+            </div>
           </div>
           <p className="text-xs text-muted-foreground font-mono">
             Mã đề tài: {scoreData.thesis_code}
@@ -363,6 +382,17 @@ export function Scores() {
           )}
         </CardContent>
       </Card>
+
+      {scoreData?.thesis_id && (
+        <ModalGradeReview
+          open={reviewModalOpen}
+          onOpenChange={setReviewModalOpen}
+          thesisId={scoreData.thesis_id}
+          topicTitle={scoreData.topic_title}
+          defaultReviewType={reviewType}
+          defaultOriginalScore={originalScore}
+        />
+      )}
     </PageLayout>
   );
 }

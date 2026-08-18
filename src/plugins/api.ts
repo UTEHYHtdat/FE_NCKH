@@ -2053,6 +2053,9 @@ export const thesisRoundsService = {
   },
 };
 
+export const thesisRoundService = thesisRoundsService;
+
+
 
 // --- thesisService.ts ---
 
@@ -2471,4 +2474,154 @@ export const reviewScheduleService = {
     return apiClient.post('/api/admin/review-schedules/auto', data);
   },
 };
+
+// ─── 1. Grade Review Service ────────────────────────────────────────────────
+export const gradeReviewService = {
+  async createReview(data: FormData | any) {
+    return apiClient.post('/api/v1/thesis/student/grade-reviews', data);
+  },
+  async getStudentReviews() {
+    const res = await apiClient.get<any>('/api/v1/thesis/student/grade-reviews');
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async getAdminReviews(params?: any) {
+    const query = new URLSearchParams(params).toString();
+    const res = await apiClient.get<any>(`/api/v1/thesis/admin/grade-reviews${query ? `?${query}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async assignInstructor(id: number, instructorId: number) {
+    return apiClient.put(`/api/v1/thesis/admin/grade-reviews/${id}/assign`, { instructor_id: instructorId });
+  },
+  async getInstructorReviews() {
+    const res = await apiClient.get<any>('/api/v1/thesis/instructor/grade-reviews');
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async reassessReview(id: number, data: { reassessed_score: number; reassessment_notes: string }) {
+    return apiClient.put(`/api/v1/thesis/instructor/grade-reviews/${id}/reassess`, data);
+  },
+  async resolveReview(id: number, data: { status: string; head_feedback?: string; apply_score?: boolean }) {
+    return apiClient.put(`/api/v1/thesis/admin/grade-reviews/${id}/resolve`, data);
+  }
+};
+
+// ─── 2. Document & Repository Service ───────────────────────────────────────
+export const documentService = {
+  async getDocuments(params?: any) {
+    const query = new URLSearchParams(params).toString();
+    const res = await apiClient.get<any>(`/api/v1/thesis/documents${query ? `?${query}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async createDocument(data: FormData | any) {
+    return apiClient.post('/api/v1/thesis/documents', data);
+  },
+  async downloadDocument(id: number) {
+    return apiClient.get(`/api/v1/thesis/documents/${id}/download`);
+  },
+  async deleteDocument(id: number) {
+    return apiClient.delete(`/api/v1/thesis/documents/${id}`);
+  },
+  async getRepository(params?: any) {
+    const query = new URLSearchParams(params).toString();
+    const res = await apiClient.get<any>(`/api/v1/thesis/documents/repository${query ? `?${query}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async getRepositoryById(id: number) {
+    const res = await apiClient.get<any>(`/api/v1/thesis/documents/repository/${id}`);
+    return res?.data || res;
+  },
+  async publishThesis(thesisId: number) {
+    return apiClient.post(`/api/v1/thesis/documents/repository/publish/${thesisId}`);
+  }
+};
+
+// ─── 3. Excel Batch Service ────────────────────────────────────────────────
+export const excelBatchService = {
+  async importStudents(formData: FormData) {
+    return apiClient.post('/api/v1/thesis/excel/import/students', formData);
+  },
+  async importProposedTopics(formData: FormData) {
+    return apiClient.post('/api/v1/thesis/excel/import/proposed-topics', formData);
+  },
+  getScoresExportUrl(thesisRoundId?: number | string) {
+    const base = import.meta.env.VITE_API_BASE_URL || '';
+    return `${base}/api/v1/thesis/excel/export/scores?thesis_round_id=${thesisRoundId || 'all'}`;
+  },
+  getDefenseScheduleExportUrl(thesisRoundId?: number | string) {
+    const base = import.meta.env.VITE_API_BASE_URL || '';
+    return `${base}/api/v1/thesis/excel/export/defense-schedule?thesis_round_id=${thesisRoundId || 'all'}`;
+  }
+};
+
+// ─── 4. Survey Service ──────────────────────────────────────────────────────
+export const surveyService = {
+  async getActiveSurveys() {
+    const res = await apiClient.get<any>('/api/v1/thesis/surveys/active');
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async getSurveyById(id: number) {
+    const res = await apiClient.get<any>(`/api/v1/thesis/surveys/${id}`);
+    return res?.data || res;
+  },
+  async submitSurvey(id: number, data: any) {
+    return apiClient.post(`/api/v1/thesis/surveys/${id}/submit`, data);
+  },
+  async getAdminSurveys(params?: any) {
+    const query = new URLSearchParams(params).toString();
+    const res = await apiClient.get<any>(`/api/v1/thesis/surveys/admin/list${query ? `?${query}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async createSurvey(data: any) {
+    return apiClient.post('/api/v1/thesis/surveys/admin/create', data);
+  },
+  async getSurveyAnalytics(id: number) {
+    const res = await apiClient.get<any>(`/api/v1/thesis/surveys/admin/${id}/analytics`);
+    return res?.data || res;
+  }
+};
+
+// ─── 5. Academic Ticket Service ─────────────────────────────────────────────
+export const academicTicketService = {
+  async createTicket(data: FormData | any) {
+    return apiClient.post('/api/v1/thesis/student/tickets', data);
+  },
+  async getStudentTickets() {
+    const res = await apiClient.get<any>('/api/v1/thesis/student/tickets');
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async getAdminTickets(params?: any) {
+    const query = new URLSearchParams(params).toString();
+    const res = await apiClient.get<any>(`/api/v1/thesis/admin/tickets${query ? `?${query}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async getTicketById(id: number) {
+    const res = await apiClient.get<any>(`/api/v1/thesis/admin/tickets/${id}`);
+    return res?.data || res;
+  },
+  async resolveTicket(id: number, data: { status: string; resolution_notes?: string; new_topic_title?: string }) {
+    return apiClient.put(`/api/v1/thesis/admin/tickets/${id}/resolve`, data);
+  }
+};
+
+// ─── 6. Announcement Service ───────────────────────────────────────────────
+export const announcementService = {
+  async getAnnouncements(params?: any) {
+    const query = new URLSearchParams(params).toString();
+    const res = await apiClient.get<any>(`/api/v1/thesis/announcements${query ? `?${query}` : ''}`);
+    return Array.isArray(res) ? res : res?.data || [];
+  },
+  async getAnnouncementById(idOrSlug: string | number) {
+    const res = await apiClient.get<any>(`/api/v1/thesis/announcements/${idOrSlug}`);
+    return res?.data || res;
+  },
+  async createAnnouncement(data: FormData | any) {
+    return apiClient.post('/api/v1/thesis/announcements', data);
+  },
+  async updateAnnouncement(id: number, data: FormData | any) {
+    return apiClient.put(`/api/v1/thesis/announcements/${id}`, data);
+  },
+  async deleteAnnouncement(id: number) {
+    return apiClient.delete(`/api/v1/thesis/announcements/${id}`);
+  }
+};
+
 

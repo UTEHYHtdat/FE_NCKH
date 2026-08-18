@@ -2532,3 +2532,219 @@ export interface AutoScheduleReviewsRequest {
   durationMinutes?: number;
 }
 
+// ─── 1. Grade Review Types ──────────────────────────────────────────────────
+export type GradeReviewType = 'SUPERVISION' | 'REVIEWER' | 'DEFENSE' | 'FINAL';
+export type GradeReviewStatus = 'PENDING' | 'ASSIGNED' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED';
+
+export interface GradeReview {
+  id: number;
+  thesis_id: number;
+  student_id: number;
+  review_type: GradeReviewType;
+  original_score: number;
+  desired_score?: number;
+  reason: string;
+  attachment_file?: string;
+  reassigned_instructor_id?: number;
+  reassessed_score?: number;
+  reassessment_notes?: string;
+  status: GradeReviewStatus;
+  head_feedback?: string;
+  head_id?: number;
+  resolved_at?: string;
+  created_at: string;
+  updated_at: string;
+  theses?: {
+    id: number;
+    topic_title: string;
+    thesis_code: string;
+    final_report_file?: string;
+  };
+  students?: {
+    id: number;
+    student_code: string;
+    users?: { full_name: string; email: string; phone?: string };
+    classes?: { class_name: string };
+  };
+  instructors?: {
+    id: number;
+    users?: { full_name: string; email: string };
+  };
+}
+
+export interface CreateGradeReviewRequest {
+  thesis_id: number;
+  review_type: GradeReviewType;
+  original_score: number;
+  desired_score?: number;
+  reason: string;
+  attachment_file?: File;
+}
+
+// ─── 2. Official Documents & Repository Types ───────────────────────────────
+export type DocumentCategory = 'TEMPLATE' | 'REGULATION' | 'GUIDE' | 'FORM';
+
+export interface OfficialDocument {
+  id: number;
+  category: DocumentCategory;
+  title: string;
+  description?: string;
+  file_url: string;
+  file_type?: string;
+  file_size?: number;
+  department_id?: number;
+  faculty_id?: number;
+  downloads_count: number;
+  uploaded_by: number;
+  created_at: string;
+}
+
+export interface DigitalRepositoryItem {
+  id: number;
+  thesis_id?: number;
+  topic_title: string;
+  abstract: string;
+  keywords?: string;
+  authors: string;
+  supervisors: string;
+  academic_year: string;
+  semester?: number;
+  department_id?: number;
+  faculty_id?: number;
+  final_score?: number;
+  grade?: string;
+  report_file_url?: string;
+  slide_file_url?: string;
+  source_code_url?: string;
+  is_published: boolean;
+  views_count: number;
+  created_at: string;
+}
+
+// ─── 3. Survey Types ────────────────────────────────────────────────────────
+export type SurveyQuestionType = 'RATING_1_5' | 'RATING_1_10' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TEXT';
+
+export interface SurveyQuestion {
+  id: number;
+  survey_id: number;
+  question_text: string;
+  question_type: SurveyQuestionType;
+  options?: any;
+  is_required: boolean;
+  order_index: number;
+}
+
+export interface Survey {
+  id: number;
+  title: string;
+  description?: string;
+  thesis_round_id?: number;
+  target_role: string;
+  is_anonymous: boolean;
+  is_active: boolean;
+  start_date?: string;
+  end_date?: string;
+  created_at: string;
+  thesis_rounds?: { id: number; round_name: string };
+  survey_questions?: SurveyQuestion[];
+  hasSubmitted?: boolean;
+  _count?: { survey_questions: number; survey_responses: number };
+}
+
+export interface SurveyAnalyticsItem {
+  id: number;
+  question_text: string;
+  question_type: SurveyQuestionType;
+  total_answers: number;
+  avg_rating?: number;
+  rating_distribution: Record<number, number>;
+  text_responses: string[];
+}
+
+export interface SurveyAnalyticsData {
+  survey: {
+    id: number;
+    title: string;
+    description?: string;
+    total_responses: number;
+  };
+  analytics: SurveyAnalyticsItem[];
+}
+
+// ─── 4. Academic Ticket Types ───────────────────────────────────────────────
+export type TicketRequestType = 'CHANGE_TOPIC_TITLE' | 'EXTEND_DEADLINE' | 'LEAVE_GROUP' | 'POSTPONE_DEFENSE' | 'OTHER';
+export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'APPROVED' | 'REJECTED' | 'CLOSED';
+
+export interface AcademicTicket {
+  id: number;
+  ticket_code: string;
+  thesis_id?: number;
+  student_id: number;
+  request_type: TicketRequestType;
+  title: string;
+  content: string;
+  attachment_file?: string;
+  priority: TicketPriority;
+  status: TicketStatus;
+  assigned_to?: number;
+  resolution_notes?: string;
+  resolved_at?: string;
+  created_at: string;
+  updated_at: string;
+  theses?: {
+    id: number;
+    topic_title: string;
+    thesis_code: string;
+  };
+  students?: {
+    id: number;
+    student_code: string;
+    users?: { full_name: string; email: string; phone?: string };
+    classes?: { class_name: string };
+  };
+  conversations?: Array<{
+    id: number;
+    conversation_name: string;
+  }>;
+}
+
+export interface CreateTicketRequest {
+  thesis_id?: number;
+  request_type: TicketRequestType;
+  title: string;
+  content: string;
+  priority?: TicketPriority;
+  attachment_file?: File;
+}
+
+// ─── 5. Announcement Types ─────────────────────────────────────────────────
+export interface AnnouncementAttachment {
+  id: number;
+  announcement_id: number;
+  file_name: string;
+  file_url: string;
+  file_size?: number;
+}
+
+export interface Announcement {
+  id: number;
+  thesis_round_id?: number;
+  title: string;
+  slug: string;
+  summary?: string;
+  content: string;
+  thumbnail_url?: string;
+  author_id: number;
+  target_roles?: string[];
+  is_pinned: boolean;
+  is_published: boolean;
+  views_count: number;
+  published_at: string;
+  created_at: string;
+  updated_at: string;
+  thesis_rounds?: { round_name: string };
+  announcement_attachments?: AnnouncementAttachment[];
+}
+
+

@@ -10,6 +10,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { gradingService, thesisRoundsService } from '@/plugins/api';
 import type { SupervisionStudent, ReviewStudent, ThesisRound } from '@/types/api';
 
+import { ExcelBatchActions } from '@/components/shared/ExcelBatchActions';
+import { excelBatchService } from '@/plugins/api';
+
 export function InstructorGrading() {
   const { user } = useAuth();
   const userRole = user?.role || 'instructor';
@@ -147,6 +150,12 @@ export function InstructorGrading() {
           : gradingType === 'review'
           ? 'Đánh giá và nhận xét các đồ án bạn được phân công phản biện'
           : 'Chấm điểm bảo vệ cho các đồ án thuộc Hội đồng bạn tham gia'
+      }
+      actions={
+        <ExcelBatchActions
+          exportUrl={excelBatchService.getScoresExportUrl(selectedThesisRoundId)}
+          exportLabel="Xuất Bảng Điểm (Excel)"
+        />
       }
     >
       {/* 3 Tab chuyển đổi loại chấm điểm */}
