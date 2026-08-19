@@ -1,7 +1,7 @@
 import { 
   Home, FileText, Users, ClipboardList, MessageSquare, Settings, 
   BookOpen, CheckSquare, Shield, UserPlus, GraduationCap, Clock, 
-  Library, Bell, FileCheck, BookmarkCheck, HelpCircle, LifeBuoy, AlertCircle 
+  Library, Bell, FileCheck, BookmarkCheck, HelpCircle, LifeBuoy, AlertCircle, KeyRound 
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { cn } from '@/utils/cn';
@@ -66,6 +66,7 @@ const menuItems = {
     { icon: Bell, label: 'Quản lý thông báo', path: '/admin/announcements' },
     { icon: Shield, label: 'Tổ chức', path: '/organization' },
     { icon: Users, label: 'Người dùng', path: '/users' },
+    { icon: KeyRound, label: 'Phân quyền vai trò', path: '/policies' },
     { icon: FileCheck, label: 'Kho biểu mẫu', path: '/documents' },
     { icon: BookmarkCheck, label: 'Thư viện số', path: '/repository' },
     { icon: Settings, label: 'Cấu hình hệ thống', path: '/settings' },

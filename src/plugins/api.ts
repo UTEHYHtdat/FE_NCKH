@@ -412,6 +412,8 @@ import type {
   LogoutResponse,
   Profile,
   User,
+  Policy,
+  RoleWithPolicies,
 } from '@/types/api';
 
 export const authService = {
@@ -515,8 +517,65 @@ export const authService = {
   clearAuth(): void {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('policies');
   },
 };
+
+// --- policyService.ts ---
+export const policyService = {
+  /**
+   * Lấy danh sách toàn bộ chính sách
+   * GET /api/policies
+   */
+  async getPolicies(): Promise<{ policies: Policy[]; grouped: Record<string, Policy[]> }> {
+    const response = await apiClient.get<{
+      success: boolean;
+      message: string;
+      data: { policies: Policy[]; grouped: Record<string, Policy[]> };
+    }>('/api/policies');
+    return response.data;
+  },
+
+  /**
+   * Lấy danh sách Roles kèm Policies
+   * GET /api/roles
+   */
+  async getRolesWithPolicies(): Promise<RoleWithPolicies[]> {
+    const response = await apiClient.get<{
+      success: boolean;
+      message: string;
+      data: RoleWithPolicies[];
+    }>('/api/roles');
+    return response.data;
+  },
+
+  /**
+   * Lấy danh sách Policies của một Role cụ thể
+   * GET /api/roles/:id/policies
+   */
+  async getRolePolicies(roleId: number): Promise<{ roleId: number; roleCode: string; roleName: string; policies: string[] }> {
+    const response = await apiClient.get<{
+      success: boolean;
+      message: string;
+      data: { roleId: number; roleCode: string; roleName: string; policies: string[] };
+    }>(`/api/roles/${roleId}/policies`);
+    return response.data;
+  },
+
+  /**
+   * Cập nhật danh sách Policies cho Role
+   * PUT /api/roles/:id/policies
+   */
+  async updateRolePolicies(roleId: number, policies: string[]): Promise<{ roleId: number; roleCode: string; policies: string[] }> {
+    const response = await apiClient.put<{
+      success: boolean;
+      message: string;
+      data: { roleId: number; roleCode: string; policies: string[] };
+    }>(`/api/roles/${roleId}/policies`, { policies });
+    return response.data;
+  },
+};
+
 
 
 // --- chatboxService.ts ---

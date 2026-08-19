@@ -7,6 +7,7 @@ import { HeadDashboard } from '@/views/Head/Dashboard/HeadDashboard';
 import { AdminDashboard } from '@/views/Admin/Dashboard/AdminDashboard';
 import { AdminOrganizationManagement } from '@/views/Admin/Organization/AdminOrganizationManagement';
 import { AdminUserManagement } from '@/views/Admin/Users/AdminUserManagement';
+import { PolicyManagement } from '@/views/Admin/Policies/PolicyManagement';
 import { GroupManagement } from '@/views/Student/Groups/GroupManagement';
 import { TopicRegistration } from '@/views/Student/TopicRegistration/TopicRegistration';
 import { HeadApproveTopics } from '@/views/Head/ApproveTopics/HeadApproveTopics';
@@ -105,6 +106,8 @@ export function AppRoutes() {
       <Route path="/manage-courses" element={<ProtectedRoute>{(isHead || isAdmin) && <ManageCourses />}</ProtectedRoute>} />
       <Route path="/organization" element={<ProtectedRoute>{isAdmin && <AdminOrganizationManagement />}</ProtectedRoute>} />
       <Route path="/users" element={<ProtectedRoute>{isAdmin && <AdminUserManagement />}</ProtectedRoute>} />
+      <Route path="/policies" element={<ProtectedRoute>{isAdmin && <PolicyManagement />}</ProtectedRoute>} />
+      <Route path="/admin/policies" element={<ProtectedRoute>{isAdmin && <PolicyManagement />}</ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute>{isAdmin && <SystemSettings />}</ProtectedRoute>} />
 
       {/* 6 New Module Routes */}

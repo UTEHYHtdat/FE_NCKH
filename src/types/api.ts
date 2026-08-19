@@ -33,38 +33,52 @@ export interface LoginRequest {
 
 
 export interface LoginResponse {
-
   token: string;
-
   user: User;
-
+  policies?: string[];
 }
-
-
 
 export interface User {
-
   id: number;
-
   email: string;
-
   fullName: string;
-
   role: UserRole;
-
+  roles?: string[];
+  policies?: string[];
   studentId?: number;
-
   studentCode?: string;
-
   className?: string;
-
   instructorId?: number;
-
   instructorCode?: string;
-
   departmentName?: string;
-
 }
+
+export interface Policy {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  category: string;
+  status?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RoleWithPolicies {
+  id: number;
+  role_code: string;
+  role_name: string;
+  description?: string;
+  status: boolean;
+  policies: string[];
+  policies_detail?: Policy[];
+}
+
+export interface UpdateRolePoliciesRequest {
+  policies?: string[];
+  policyIds?: number[];
+}
+
 
 
 

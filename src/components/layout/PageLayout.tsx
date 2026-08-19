@@ -16,14 +16,18 @@ interface PageLayoutProps {
 
 export function PageLayout({
   children,
-  userRole,
-  userName,
-  userAvatar,
+  userRole: propUserRole,
+  userName: propUserName,
+  userAvatar: propUserAvatar,
   title,
   subtitle,
   actions,
 }: PageLayoutProps) {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+
+  const userRole = propUserRole || user?.role || 'student';
+  const userName = propUserName || user?.fullName || (user as any)?.username || (user as any)?.full_name || 'Quản trị viên';
+  const userAvatar = propUserAvatar || (user as any)?.avatar;
 
   const handleLogout = async () => {
     try {
