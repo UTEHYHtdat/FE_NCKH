@@ -10,6 +10,8 @@ interface Task {
   task_description?: string;
   due_date: string;
   status: string; // e.g. PENDING, IN_PROGRESS, COMPLETED
+  progress_percentage?: number;
+  notes?: string;
   list_id?: number | null;
 }
 
@@ -103,11 +105,10 @@ export function KanbanBoard({
           </div>
           <div className="p-3 overflow-y-auto flex-1 space-y-3 custom-scrollbar bg-zinc-50/50">
             {column.tasks.map((task) => (
-              <button
+              <div
                 key={task.id}
-                type="button"
+                className="bg-white hover:bg-zinc-100 p-3 rounded-lg border border-zinc-200 shadow-sm transition-colors cursor-pointer group"
                 onClick={() => onTaskClick?.(task)}
-                className="w-full bg-white hover:bg-zinc-100 p-3 rounded-lg border border-zinc-200 shadow-sm transition-colors cursor-pointer group text-left"
               >
                 <div className="flex items-start gap-2">
                   <div className="mt-0.5 text-green-500 flex-shrink-0">
@@ -136,7 +137,7 @@ export function KanbanBoard({
                       )}
                   </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
 

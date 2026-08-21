@@ -3,7 +3,6 @@ import { Clock } from 'lucide-react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { ProjectTimeline } from '@/components/ProjectTimeline';
 import { KanbanBoard } from '@/components/KanbanBoard';
-import { TaskDetailDialog } from '@/components/TaskDetailDialog';
 import {
   Dialog,
   DialogContent,
@@ -44,8 +43,9 @@ export function TimelinePage() {
   >();
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
   const [selectedListId, setSelectedListId] = useState<number | undefined>();
+  const [selectedTask, setSelectedTask] = useState<any | null>(null);
 
-  // State tạo task mới
+  // Task creation state
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [newTask, setNewTask] = useState({
     title: '',
@@ -56,40 +56,6 @@ export function TimelinePage() {
     priority: 'MEDIUM',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // State mở xem & chỉnh sửa chi tiết task
-  const [selectedTask, setSelectedTask] = useState<any | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-
-  const handleTaskClick = (task: any) => {
-    setSelectedTask(task);
-    setIsDetailOpen(true);
-  };
-
-  const handleUpdateTask = async (updatedFields: any) => {
-    try {
-      if ((reportService as any).updateThesisTask) {
-        await (reportService as any).updateThesisTask(updatedFields.id, {
-          task_name: updatedFields.title,
-          description: updatedFields.description,
-          assigned_to: updatedFields.assignee
-            ? parseInt(updatedFields.assignee)
-            : undefined,
-          status: updatedFields.status,
-          priority: updatedFields.priority,
-          start_date: updatedFields.startDate
-            ? new Date(updatedFields.startDate).toISOString()
-            : undefined,
-          due_date: updatedFields.dueDate
-            ? new Date(updatedFields.dueDate).toISOString()
-            : undefined,
-        });
-      }
-      fetchData();
-    } catch (e) {
-      console.error('Failed to update task', e);
-    }
-  };
 
   const handleCreateTask = async () => {
     if (
@@ -122,7 +88,7 @@ export function TimelinePage() {
         startDate: new Date().toISOString().split('T')[0],
         priority: 'MEDIUM',
       });
-      fetchData();
+      fetchData(); // Refresh tasks
     } catch (e) {
       console.error('Failed to create task', e);
       alert('Có lỗi xảy ra khi tạo công việc!');
@@ -142,6 +108,7 @@ export function TimelinePage() {
 
       let currentThesisId: number | undefined;
 
+      // Get topic registrations
       try {
         const registrations =
           await topicRegistrationService.getTopicRegistrations();
@@ -153,6 +120,7 @@ export function TimelinePage() {
         console.error('Error fetching registrations:', e);
       }
 
+      // Get thesis tasks and kanban lists
       let projectTimeline: any[] = [];
       if (currentThesisId) {
         try {
@@ -177,6 +145,7 @@ export function TimelinePage() {
         }
       }
 
+      // Get active thesis round timeline
       let roundTimeline: any[] = [];
       try {
         const roundsResponse =
@@ -227,6 +196,7 @@ export function TimelinePage() {
         console.error('Error fetching thesis rounds:', e);
       }
 
+      // Check if user is leader and get members
       let userIsLeader = false;
       try {
         const groups = await thesisGroupsService.getThesisGroups(user?.id);
@@ -280,7 +250,7 @@ export function TimelinePage() {
         thesis_id: currentThesisIdState,
         name,
       });
-      fetchData();
+      fetchData(); // refresh lists
     } catch (e) {
       console.error('Failed to create list', e);
       throw e;
@@ -290,6 +260,26 @@ export function TimelinePage() {
   const handleOpenCreateDialog = (listId?: number) => {
     setSelectedListId(listId);
     setIsCreateTaskOpen(true);
+  };
+
+  const handleUpdateTask = async (task: any) => {
+    await reportService.updateThesisTask(task.id, {
+      task_title: task.task_name,
+      task_description: task.task_description,
+      assigned_to: task.assigned_to,
+      due_date: task.due_date
+        ? new Date(task.due_date).toISOString()
+        : undefined,
+      start_date: task.start_date
+        ? new Date(task.start_date).toISOString()
+        : undefined,
+      priority: task.priority,
+      status: task.status,
+      progress_percentage: task.progress_percentage,
+      notes: task.notes,
+    });
+    setSelectedTask(null);
+    await fetchData();
   };
 
   return (
@@ -304,12 +294,19 @@ export function TimelinePage() {
       }
     >
       <div className="flex flex-col gap-8 h-full min-h-[calc(100vh-12rem)]">
-        {/* Project Timeline mốc thời gian */}
+        {/* Timeline List Section (Horizontal at top) */}
         <div className="w-full shrink-0">
-          <ProjectTimeline deadlines={deadlines} isLeader={isLeader} />
+          <ProjectTimeline
+            deadlines={deadlines}
+            isLeader={isLeader}
+            selectedTask={selectedTask}
+            onTaskUpdated={handleUpdateTask}
+            onTaskClose={() => setSelectedTask(null)}
+            groupMembers={groupMembers}
+          />
         </div>
 
-        {/* Bảng Kanban */}
+        {/* Kanban Board Section */}
         <div className="flex-1 flex flex-col min-h-[400px]">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Bảng Công Việc (Kanban)</h2>
@@ -320,13 +317,12 @@ export function TimelinePage() {
               lists={kanbanLists}
               onAddList={handleAddKanbanList}
               onOpenCreateDialog={handleOpenCreateDialog}
-              onTaskClick={handleTaskClick}
+              onTaskClick={setSelectedTask}
             />
           </div>
         </div>
       </div>
 
-      {/* Modal Tạo Task Mới */}
       <Dialog open={isCreateTaskOpen} onOpenChange={setIsCreateTaskOpen}>
         <DialogContent>
           <DialogHeader>
@@ -459,16 +455,6 @@ export function TimelinePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Modal Chi Tiết & Chỉnh Sửa Task */}
-      <TaskDetailDialog
-        isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-        task={selectedTask}
-        groupMembers={groupMembers}
-        onUpdateTask={handleUpdateTask}
-        currentUser={user}
-      />
     </PageLayout>
   );
 }
