@@ -3,14 +3,32 @@ import { Clock } from 'lucide-react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { ProjectTimeline } from '@/components/ProjectTimeline';
 import { KanbanBoard } from '@/components/KanbanBoard';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { thesisGroupsService, topicRegistrationService, reportService, thesisRoundsService } from '@/plugins/api';
+import {
+  thesisGroupsService,
+  topicRegistrationService,
+  reportService,
+  thesisRoundsService,
+} from '@/plugins/api';
 
 export function TimelinePage() {
   const { user } = useAuth();
@@ -20,9 +38,12 @@ export function TimelinePage() {
   const [rawTasks, setRawTasks] = useState<any[]>([]);
   const [kanbanLists, setKanbanLists] = useState<any[]>([]);
   const [isLeader, setIsLeader] = useState<boolean>(false);
-  const [currentThesisIdState, setCurrentThesisIdState] = useState<number | undefined>();
+  const [currentThesisIdState, setCurrentThesisIdState] = useState<
+    number | undefined
+  >();
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
   const [selectedListId, setSelectedListId] = useState<number | undefined>();
+  const [selectedTask, setSelectedTask] = useState<any | null>(null);
 
   // Task creation state
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
@@ -32,13 +53,19 @@ export function TimelinePage() {
     assignee: '',
     dueDate: '',
     startDate: new Date().toISOString().split('T')[0],
-    priority: 'MEDIUM'
+    priority: 'MEDIUM',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreateTask = async () => {
-    if (!currentThesisIdState || !newTask.title || !newTask.dueDate || !newTask.assignee) return;
-    
+    if (
+      !currentThesisIdState ||
+      !newTask.title ||
+      !newTask.dueDate ||
+      !newTask.assignee
+    )
+      return;
+
     setIsSubmitting(true);
     try {
       await reportService.createThesisTask({
@@ -50,10 +77,17 @@ export function TimelinePage() {
         start_date: new Date(newTask.startDate).toISOString(),
         priority: newTask.priority as any,
         student_id: user?.id as number,
-        list_id: selectedListId
+        list_id: selectedListId,
       });
       setIsCreateTaskOpen(false);
-      setNewTask({ title: '', description: '', assignee: '', dueDate: '', startDate: new Date().toISOString().split('T')[0], priority: 'MEDIUM' });
+      setNewTask({
+        title: '',
+        description: '',
+        assignee: '',
+        dueDate: '',
+        startDate: new Date().toISOString().split('T')[0],
+        priority: 'MEDIUM',
+      });
       fetchData(); // Refresh tasks
     } catch (e) {
       console.error('Failed to create task', e);
@@ -76,7 +110,8 @@ export function TimelinePage() {
 
       // Get topic registrations
       try {
-        const registrations = await topicRegistrationService.getTopicRegistrations();
+        const registrations =
+          await topicRegistrationService.getTopicRegistrations();
         if (registrations && registrations.length > 0) {
           currentThesisId = registrations[0].theses?.id;
           setCurrentThesisIdState(currentThesisId);
@@ -91,36 +126,70 @@ export function TimelinePage() {
         try {
           const [thesisTasks, listsResponse] = await Promise.all([
             reportService.getThesisTasks(currentThesisId),
-            reportService.getKanbanLists(currentThesisId)
+            reportService.getKanbanLists(currentThesisId),
           ]);
           setRawTasks(Array.isArray(thesisTasks) ? thesisTasks : []);
           setKanbanLists(Array.isArray(listsResponse) ? listsResponse : []);
-          projectTimeline = (Array.isArray(thesisTasks) ? thesisTasks : []).map((task: any) => ({
-            label: task?.task_name || 'Unknown',
-            date: task?.due_date ? new Date(task.due_date).toLocaleDateString('vi-VN') : '',
-            completed: task?.status === 'COMPLETED',
-            rawDate: task?.due_date ? new Date(task.due_date).getTime() : 0
-          })).sort((a: any, b: any) => a.rawDate - b.rawDate);
+          projectTimeline = (Array.isArray(thesisTasks) ? thesisTasks : [])
+            .map((task: any) => ({
+              label: task?.task_name || 'Unknown',
+              date: task?.due_date
+                ? new Date(task.due_date).toLocaleDateString('vi-VN')
+                : '',
+              completed: task?.status === 'COMPLETED',
+              rawDate: task?.due_date ? new Date(task.due_date).getTime() : 0,
+            }))
+            .sort((a: any, b: any) => a.rawDate - b.rawDate);
         } catch (e) {
           console.error('Error fetching tasks and lists:', e);
         }
       }
-      
+
       // Get active thesis round timeline
       let roundTimeline: any[] = [];
       try {
-        const roundsResponse = await thesisRoundsService.getThesisRoundsForStudent();
+        const roundsResponse =
+          await thesisRoundsService.getThesisRoundsForStudent();
         const activeRounds = roundsResponse.data;
-        
+
         if (activeRounds && activeRounds.length > 0) {
           const currentRound = activeRounds[0];
           const now = new Date();
           roundTimeline = [
-            { label: 'Bắt đầu đợt', date: new Date(currentRound.start_date).toLocaleDateString('vi-VN'), completed: new Date(currentRound.start_date) <= now },
-            { label: 'Đề xuất đề tài', date: new Date(currentRound.topic_proposal_deadline).toLocaleDateString('vi-VN'), completed: new Date(currentRound.topic_proposal_deadline) <= now },
-            { label: 'Đăng ký đề tài', date: new Date(currentRound.registration_deadline).toLocaleDateString('vi-VN'), completed: new Date(currentRound.registration_deadline) <= now },
-            { label: 'Nộp báo cáo', date: new Date(currentRound.report_submission_deadline).toLocaleDateString('vi-VN'), completed: new Date(currentRound.report_submission_deadline) <= now },
-            { label: 'Kết thúc đợt', date: new Date(currentRound.end_date).toLocaleDateString('vi-VN'), completed: new Date(currentRound.end_date) <= now }
+            {
+              label: 'Bắt đầu đợt',
+              date: new Date(currentRound.start_date).toLocaleDateString(
+                'vi-VN',
+              ),
+              completed: new Date(currentRound.start_date) <= now,
+            },
+            {
+              label: 'Đề xuất đề tài',
+              date: new Date(
+                currentRound.topic_proposal_deadline,
+              ).toLocaleDateString('vi-VN'),
+              completed: new Date(currentRound.topic_proposal_deadline) <= now,
+            },
+            {
+              label: 'Đăng ký đề tài',
+              date: new Date(
+                currentRound.registration_deadline,
+              ).toLocaleDateString('vi-VN'),
+              completed: new Date(currentRound.registration_deadline) <= now,
+            },
+            {
+              label: 'Nộp báo cáo',
+              date: new Date(
+                currentRound.report_submission_deadline,
+              ).toLocaleDateString('vi-VN'),
+              completed:
+                new Date(currentRound.report_submission_deadline) <= now,
+            },
+            {
+              label: 'Kết thúc đợt',
+              date: new Date(currentRound.end_date).toLocaleDateString('vi-VN'),
+              completed: new Date(currentRound.end_date) <= now,
+            },
           ];
         }
       } catch (e) {
@@ -134,9 +203,9 @@ export function TimelinePage() {
         if (groups && groups.length > 0) {
           const members = groups[0].thesis_group_members || [];
           setGroupMembers(members);
-          userIsLeader = members.find(
-            (m: any) => m.students?.users?.id === user?.id
-          )?.role === 'LEADER';
+          userIsLeader =
+            members.find((m: any) => m.students?.users?.id === user?.id)
+              ?.role === 'LEADER';
         }
       } catch (e) {
         console.error('Error checking leader status:', e);
@@ -148,7 +217,6 @@ export function TimelinePage() {
       } else {
         setDeadlines(roundTimeline);
       }
-
     } catch (error) {
       console.error('Error fetching timeline data:', error);
     } finally {
@@ -180,7 +248,7 @@ export function TimelinePage() {
     try {
       await reportService.createKanbanList({
         thesis_id: currentThesisIdState,
-        name
+        name,
       });
       fetchData(); // refresh lists
     } catch (e) {
@@ -194,17 +262,48 @@ export function TimelinePage() {
     setIsCreateTaskOpen(true);
   };
 
+  const handleUpdateTask = async (task: any) => {
+    await reportService.updateThesisTask(task.id, {
+      task_title: task.task_name,
+      task_description: task.task_description,
+      assigned_to: task.assigned_to,
+      due_date: task.due_date
+        ? new Date(task.due_date).toISOString()
+        : undefined,
+      start_date: task.start_date
+        ? new Date(task.start_date).toISOString()
+        : undefined,
+      priority: task.priority,
+      status: task.status,
+      progress_percentage: task.progress_percentage,
+      notes: task.notes,
+    });
+    setSelectedTask(null);
+    await fetchData();
+  };
+
   return (
     <PageLayout
       userRole={userRole as any}
       userName={user?.fullName || 'Nguyễn Văn A'}
       title="Timeline"
-      subtitle={isLeader ? 'Timeline dự án theo từng công việc' : 'Các mốc thời gian của đợt khóa luận'}
+      subtitle={
+        isLeader
+          ? 'Timeline dự án theo từng công việc'
+          : 'Các mốc thời gian của đợt khóa luận'
+      }
     >
       <div className="flex flex-col gap-8 h-full min-h-[calc(100vh-12rem)]">
         {/* Timeline List Section (Horizontal at top) */}
         <div className="w-full shrink-0">
-          <ProjectTimeline deadlines={deadlines} isLeader={isLeader} />
+          <ProjectTimeline
+            deadlines={deadlines}
+            isLeader={isLeader}
+            selectedTask={selectedTask}
+            onTaskUpdated={handleUpdateTask}
+            onTaskClose={() => setSelectedTask(null)}
+            groupMembers={groupMembers}
+          />
         </div>
 
         {/* Kanban Board Section */}
@@ -213,11 +312,12 @@ export function TimelinePage() {
             <h2 className="text-xl font-bold">Bảng Công Việc (Kanban)</h2>
           </div>
           <div className="flex-1 overflow-hidden">
-            <KanbanBoard 
-              tasks={rawTasks} 
+            <KanbanBoard
+              tasks={rawTasks}
               lists={kanbanLists}
               onAddList={handleAddKanbanList}
-              onOpenCreateDialog={handleOpenCreateDialog} 
+              onOpenCreateDialog={handleOpenCreateDialog}
+              onTaskClick={setSelectedTask}
             />
           </div>
         </div>
@@ -233,36 +333,55 @@ export function TimelinePage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Tên công việc <span className="text-red-500">*</span></Label>
-              <Input 
-                placeholder="Nhập tên công việc" 
+              <Label>
+                Tên công việc <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                placeholder="Nhập tên công việc"
                 value={newTask.title}
-                onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                onChange={(e) =>
+                  setNewTask({ ...newTask, title: e.target.value })
+                }
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Mô tả (Tùy chọn)</Label>
-              <Textarea 
-                placeholder="Nhập mô tả chi tiết công việc..." 
+              <Textarea
+                placeholder="Nhập mô tả chi tiết công việc..."
                 value={newTask.description}
-                onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                onChange={(e) =>
+                  setNewTask({ ...newTask, description: e.target.value })
+                }
                 className="h-20"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Người thực hiện <span className="text-red-500">*</span></Label>
-                <Select value={newTask.assignee} onValueChange={(val) => setNewTask({...newTask, assignee: val})}>
+                <Label>
+                  Người thực hiện <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={newTask.assignee}
+                  onValueChange={(val) =>
+                    setNewTask({ ...newTask, assignee: val })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn thành viên" />
                   </SelectTrigger>
                   <SelectContent>
                     {groupMembers.map((member: any) => {
-                      const studentIdStr = member.student_id?.toString() || member.students?.id?.toString() || '';
+                      const studentIdStr =
+                        member.student_id?.toString() ||
+                        member.students?.id?.toString() ||
+                        '';
                       return (
-                        <SelectItem key={studentIdStr || Math.random()} value={studentIdStr}>
+                        <SelectItem
+                          key={studentIdStr || Math.random()}
+                          value={studentIdStr}
+                        >
                           {member.students?.users?.full_name || 'Unknown'}
                         </SelectItem>
                       );
@@ -272,7 +391,12 @@ export function TimelinePage() {
               </div>
               <div className="space-y-2">
                 <Label>Mức độ ưu tiên</Label>
-                <Select value={newTask.priority} onValueChange={(val) => setNewTask({...newTask, priority: val})}>
+                <Select
+                  value={newTask.priority}
+                  onValueChange={(val) =>
+                    setNewTask({ ...newTask, priority: val })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -288,27 +412,43 @@ export function TimelinePage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Ngày bắt đầu</Label>
-                <Input 
-                  type="date" 
+                <Input
+                  type="date"
                   value={newTask.startDate}
-                  onChange={(e) => setNewTask({...newTask, startDate: e.target.value})}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, startDate: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
-                <Label>Hạn chót (Deadline) <span className="text-red-500">*</span></Label>
-                <Input 
-                  type="date" 
+                <Label>
+                  Hạn chót (Deadline) <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="date"
                   value={newTask.dueDate}
-                  onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, dueDate: e.target.value })
+                  }
                 />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateTaskOpen(false)}>Hủy</Button>
-            <Button 
-              onClick={handleCreateTask} 
-              disabled={isSubmitting || !newTask.title || !newTask.dueDate || !newTask.assignee}
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateTaskOpen(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={handleCreateTask}
+              disabled={
+                isSubmitting ||
+                !newTask.title ||
+                !newTask.dueDate ||
+                !newTask.assignee
+              }
             >
               {isSubmitting ? 'Đang tạo...' : 'Lưu công việc'}
             </Button>
