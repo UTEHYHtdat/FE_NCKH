@@ -8,6 +8,9 @@ import { AdminDashboard } from '@/views/Admin/Dashboard/AdminDashboard';
 import { AdminOrganizationManagement } from '@/views/Admin/Organization/AdminOrganizationManagement';
 import { AdminUserManagement } from '@/views/Admin/Users/AdminUserManagement';
 import { PolicyManagement } from '@/views/Admin/Policies/PolicyManagement';
+import { AcademicStudentManagement } from '@/views/Academic/Students/AcademicStudentManagement';
+import { AcademicInstructorManagement } from '@/views/Academic/Instructors/AcademicInstructorManagement';
+import { AcademicClassManagement } from '@/views/Academic/Classes/AcademicClassManagement';
 import { GroupManagement } from '@/views/Student/Groups/GroupManagement';
 import { TopicRegistration } from '@/views/Student/TopicRegistration/TopicRegistration';
 import { HeadApproveTopics } from '@/views/Head/ApproveTopics/HeadApproveTopics';
@@ -78,20 +81,21 @@ export function AppRoutes() {
   const isInstructor = role === 'instructor';
   const isHead = role === 'head' || role === 'department_head';
   const isAdmin = role === 'admin';
+  const isAcademicAffairs = role === 'academic_affairs';
 
   return (
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
-      <Route path="/dashboard" element={<ProtectedRoute>{isStudent && <StudentDashboard />}{isInstructor && <InstructorDashboard />}{isHead && <HeadDashboard />}{isAdmin && <AdminDashboard />}</ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute>{isStudent && <StudentDashboard />}{isInstructor && <InstructorDashboard />}{isHead && <HeadDashboard />}{(isAdmin || isAcademicAffairs) && <AdminDashboard />}</ProtectedRoute>} />
       <Route path="/groups" element={<ProtectedRoute>{isStudent && <GroupManagement />}</ProtectedRoute>} />
       <Route path="/topic-registration" element={<ProtectedRoute>{isStudent && <TopicRegistration />}</ProtectedRoute>} />
       <Route path="/timeline" element={<ProtectedRoute>{isStudent && <TimelinePage />}</ProtectedRoute>} />
-      <Route path="/rounds" element={<ProtectedRoute>{(isHead || isAdmin) && <ThesisRounds />}</ProtectedRoute>} />
-      <Route path="/assign-instructors" element={<ProtectedRoute>{(isHead || isAdmin) && <HeadAssignInstructors />}</ProtectedRoute>} />
-      <Route path="/assign-reviewers" element={<ProtectedRoute>{(isHead || isAdmin) && <HeadAssignReviewers />}</ProtectedRoute>} />
-      <Route path="/review-schedule" element={<ProtectedRoute>{(isHead || isAdmin) && <HeadReviewSchedule />}</ProtectedRoute>} />
+      <Route path="/rounds" element={<ProtectedRoute>{(isHead || isAdmin || isAcademicAffairs) && <ThesisRounds />}</ProtectedRoute>} />
+      <Route path="/assign-instructors" element={<ProtectedRoute>{(isHead || isAdmin || isAcademicAffairs) && <HeadAssignInstructors />}</ProtectedRoute>} />
+      <Route path="/assign-reviewers" element={<ProtectedRoute>{(isHead || isAdmin || isAcademicAffairs) && <HeadAssignReviewers />}</ProtectedRoute>} />
+      <Route path="/review-schedule" element={<ProtectedRoute>{(isHead || isAdmin || isAcademicAffairs) && <HeadReviewSchedule />}</ProtectedRoute>} />
       <Route path="/grading-templates" element={<ProtectedRoute>{(isHead || isAdmin) && <HeadGradingTemplates />}</ProtectedRoute>} />
-      <Route path="/messages" element={<ProtectedRoute>{isStudent && <Messages />}{isHead && <HeadMessages />}{isInstructor && <Messages />}{isAdmin && <HeadMessages />}</ProtectedRoute>} />
+      <Route path="/messages" element={<ProtectedRoute>{isStudent && <Messages />}{isHead && <HeadMessages />}{isInstructor && <Messages />}{(isAdmin || isAcademicAffairs) && <HeadMessages />}</ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute>{isStudent && <WeeklyReports />}{isInstructor && <InstructorAllReports />}{(isHead || isAdmin) && <HeadReports />}</ProtectedRoute>} />
       <Route path="/scores" element={<ProtectedRoute>{isStudent && <Scores />}</ProtectedRoute>} />
       <Route path="/courses" element={<ProtectedRoute>{isStudent && <Courses />}</ProtectedRoute>} />
@@ -102,10 +106,13 @@ export function AppRoutes() {
       <Route path="/grading" element={<ProtectedRoute>{isInstructor && <InstructorGrading />}</ProtectedRoute>} />
       <Route path="/instructor-courses" element={<ProtectedRoute>{isInstructor && <InstructorCourse />}</ProtectedRoute>} />
       <Route path="/approve-topics" element={<ProtectedRoute>{(isHead || isAdmin) && <HeadApproveTopics />}</ProtectedRoute>} />
-      <Route path="/councils" element={<ProtectedRoute>{(isHead || isAdmin) && <DefenseCouncils />}</ProtectedRoute>} />
+      <Route path="/councils" element={<ProtectedRoute>{(isHead || isAdmin || isAcademicAffairs) && <DefenseCouncils />}</ProtectedRoute>} />
       <Route path="/manage-courses" element={<ProtectedRoute>{(isHead || isAdmin) && <ManageCourses />}</ProtectedRoute>} />
-      <Route path="/organization" element={<ProtectedRoute>{isAdmin && <AdminOrganizationManagement />}</ProtectedRoute>} />
-      <Route path="/users" element={<ProtectedRoute>{isAdmin && <AdminUserManagement />}</ProtectedRoute>} />
+      <Route path="/organization" element={<ProtectedRoute>{(isAdmin || isAcademicAffairs) && <AdminOrganizationManagement />}</ProtectedRoute>} />
+      <Route path="/users" element={<ProtectedRoute>{(isAdmin || isAcademicAffairs) && <AdminUserManagement />}</ProtectedRoute>} />
+      <Route path="/academic/students" element={<ProtectedRoute>{(isAdmin || isAcademicAffairs) && <AcademicStudentManagement />}</ProtectedRoute>} />
+      <Route path="/academic/classes" element={<ProtectedRoute>{(isAdmin || isAcademicAffairs) && <AcademicClassManagement />}</ProtectedRoute>} />
+      <Route path="/academic/instructors" element={<ProtectedRoute>{(isAdmin || isAcademicAffairs) && <AcademicInstructorManagement />}</ProtectedRoute>} />
       <Route path="/policies" element={<ProtectedRoute>{isAdmin && <PolicyManagement />}</ProtectedRoute>} />
       <Route path="/admin/policies" element={<ProtectedRoute>{isAdmin && <PolicyManagement />}</ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute>{isAdmin && <SystemSettings />}</ProtectedRoute>} />
@@ -115,7 +122,7 @@ export function AppRoutes() {
       <Route path="/repository" element={<ProtectedRoute><DigitalRepository /></ProtectedRoute>} />
       <Route path="/announcements" element={<ProtectedRoute><AnnouncementsFeed /></ProtectedRoute>} />
       <Route path="/announcements/:id" element={<ProtectedRoute><AnnouncementDetail /></ProtectedRoute>} />
-      <Route path="/admin/announcements" element={<ProtectedRoute>{(isHead || isAdmin) && <AdminAnnouncements />}</ProtectedRoute>} />
+      <Route path="/admin/announcements" element={<ProtectedRoute>{(isHead || isAdmin || isAcademicAffairs) && <AdminAnnouncements />}</ProtectedRoute>} />
       <Route path="/requests" element={<ProtectedRoute>{isStudent ? <StudentAcademicRequests /> : <HeadAcademicRequests />}</ProtectedRoute>} />
       <Route path="/grade-reviews" element={<ProtectedRoute>{(isHead || isAdmin) ? <HeadGradeReviews /> : isInstructor ? <InstructorGradeReviews /> : <Scores />}</ProtectedRoute>} />
       <Route path="/surveys" element={<ProtectedRoute>{(isHead || isAdmin) ? <HeadSurveys /> : <SurveysList />}</ProtectedRoute>} />

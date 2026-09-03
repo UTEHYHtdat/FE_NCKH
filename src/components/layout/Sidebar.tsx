@@ -1,15 +1,17 @@
 import { 
   Home, FileText, Users, ClipboardList, MessageSquare, Settings, 
   BookOpen, CheckSquare, Shield, UserPlus, GraduationCap, Clock, 
-  Library, Bell, FileCheck, BookmarkCheck, HelpCircle, LifeBuoy, AlertCircle, KeyRound 
+  Library, Bell, FileCheck, BookmarkCheck, HelpCircle, LifeBuoy, AlertCircle, KeyRound, Building2, X, School 
 } from 'lucide-react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { cn } from '@/utils/cn';
 
 interface SidebarProps {
-  userRole?: 'student' | 'instructor' | 'head' | 'department_head' | 'admin';
+  userRole?: 'student' | 'instructor' | 'head' | 'department_head' | 'admin' | 'academic_affairs';
   userName?: string;
   userAvatar?: string;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 const menuItems = {
@@ -64,60 +66,105 @@ const menuItems = {
   admin: [
     { icon: Home, label: 'Dashboard', path: '/dashboard' },
     { icon: Bell, label: 'Quản lý thông báo', path: '/admin/announcements' },
-    { icon: Shield, label: 'Tổ chức', path: '/organization' },
-    { icon: Users, label: 'Người dùng', path: '/users' },
     { icon: KeyRound, label: 'Phân quyền vai trò', path: '/policies' },
+    { icon: Settings, label: 'Cấu hình hệ thống', path: '/settings' },
+    { icon: MessageSquare, label: 'Tin nhắn & Hỗ trợ', path: '/messages' },
+  ],
+  academic_affairs: [
+    { icon: Home, label: 'Dashboard', path: '/dashboard' },
+    { icon: Bell, label: 'Thông báo học vụ', path: '/admin/announcements' },
+    { icon: Building2, label: 'Tổ chức đào tạo', path: '/organization' },
+    { icon: GraduationCap, label: 'Quản lý Sinh viên', path: '/academic/students' },
+    { icon: School, label: 'Quản lý Lớp học', path: '/academic/classes' },
+    { icon: Users, label: 'Quản lý Giảng viên', path: '/academic/instructors' },
+    { icon: Clock, label: 'Lịch phản biện', path: '/review-schedule' },
+    { icon: Shield, label: 'Lịch bảo vệ khóa luận', path: '/councils' },
     { icon: FileCheck, label: 'Kho biểu mẫu', path: '/documents' },
     { icon: BookmarkCheck, label: 'Thư viện số', path: '/repository' },
-    { icon: Settings, label: 'Cấu hình hệ thống', path: '/settings' },
+    { icon: MessageSquare, label: 'Tin nhắn', path: '/messages' },
   ],
 };
 
-export function Sidebar({ userRole = 'student', userName = 'Nguyễn Văn A', userAvatar }: SidebarProps) {
+export function Sidebar({ 
+  userRole = 'student', 
+  userName = 'Nguyễn Văn A', 
+  userAvatar,
+  isOpen = false,
+  onClose
+}: SidebarProps) {
   const location = useLocation();
-  const navigate = useNavigate();
   const roleKey = userRole === 'department_head' ? 'head' : userRole;
   const items = menuItems[roleKey] || menuItems['student'];
 
   return (
-    <div className="w-60 h-screen bg-sidebar text-sidebar-foreground flex flex-col fixed left-0 top-0">
-      {/* Logo */}
-      <Link to="/dashboard" className="p-6 border-b border-sidebar-border block">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-sidebar-primary rounded-lg flex items-center justify-center">
-            <BookOpen className="w-6 h-6 text-sidebar-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg" style={{ fontFamily: 'var(--font-heading)' }}>ThesisHub</h1>
-            <p className="text-xs text-sidebar-accent-foreground">Quản lý khóa luận</p>
-          </div>
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar Container */}
+      <aside
+        className={cn(
+          "w-60 h-screen bg-sidebar text-sidebar-foreground flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-sidebar-border",
+          isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        )}
+      >
+        {/* Logo & Close Button */}
+        <div className="p-4 sm:p-5 border-b border-sidebar-border flex items-center justify-between">
+          <Link 
+            to="/dashboard" 
+            onClick={onClose}
+            className="flex items-center gap-3 overflow-hidden"
+          >
+            <div className="w-9 h-9 bg-sidebar-primary rounded-lg flex items-center justify-center flex-shrink-0">
+              <BookOpen className="w-5 h-5 text-sidebar-primary-foreground" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-bold text-base leading-tight truncate" style={{ fontFamily: 'var(--font-heading)' }}>ThesisHub</h1>
+              <p className="text-[11px] text-sidebar-accent-foreground truncate">Quản lý khóa luận</p>
+            </div>
+          </Link>
+
+          {/* Mobile Close Button */}
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent lg:hidden transition-colors"
+            aria-label="Đóng menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-      </Link>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+        {/* Navigation Links */}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {items.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
 
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left',
-                isActive
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-              )}
-            >
-              <Icon className="w-5 h-5" />
-              <span className="text-sm font-medium">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-
-    </div>
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={onClose}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left',
+                  isActive
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground font-semibold'
+                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                )}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                <span className="text-xs font-medium truncate">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
   );
 }

@@ -134,7 +134,7 @@ export function Scores() {
               </div>
             </div>
             <div className="text-3xl font-bold text-green-600 mb-1">
-              {supervision?.score !== undefined ? supervision.score : '-'}
+              {supervision?.score !== undefined && supervision?.score !== null ? supervision.score : '-'}
             </div>
             <p className="text-xs text-muted-foreground">
               {supervision?.instructor_name ? `GVHD: ${supervision.instructor_name}` : 'Chưa có điểm'}

@@ -91,7 +91,7 @@ export function InstructorGradingForm({
               tpl.criteria_config.map((c: any, idx: number) => ({
                 id: c.id || idx + 1,
                 name: c.name || c.title || `Tiêu chí ${idx + 1}`,
-                maxScore: Number(c.maxScore || c.weight || 2.5),
+                maxScore: Number(c.max_score ?? c.maxScore ?? c.weight ?? 2.5),
                 score: 0,
                 comment: '',
               }))

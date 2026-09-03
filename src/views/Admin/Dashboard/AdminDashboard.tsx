@@ -5,8 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { thesisRoundsService } from '@/plugins/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function AdminDashboard() {
+  const { user } = useAuth();
+  const isAcademicAffairs = user?.role === 'academic_affairs';
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -49,13 +52,8 @@ export function AdminDashboard() {
 
   return (
     <PageLayout
-      userRole="admin"
-      userName="Admin"
-      title="Dashboard Quản Trị"
-      subtitle="Quản lý hệ thống ThesisHub"
-      actions={
-        <Button>Tạo người dùng mới</Button>
-      }
+      title={isAcademicAffairs ? "Dashboard Giáo Vụ & Đào Tạo" : "Dashboard Quản Trị Hệ Thống"}
+      subtitle={isAcademicAffairs ? "Tổng quan dữ liệu sinh viên, giảng viên và các lớp học" : "Cấu hình, phân quyền và quản lý hệ thống ThesisHub"}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card>

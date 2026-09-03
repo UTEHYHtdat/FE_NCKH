@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { thesisRoundsService, instructorService, reviewScheduleService, topicRegistrationService } from '@/plugins/api';
 import type { ThesisRound, ReviewScheduleItemData } from '@/types/api';
+import { TablePagination } from '@/components/shared/TablePagination';
 
 interface ScheduleFormItem {
   thesisId?: number;
@@ -80,6 +81,8 @@ export function HeadReviewSchedule() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -434,181 +437,204 @@ export function HeadReviewSchedule() {
       {selectedRound && (
         <Card className="mb-6">
           <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+              <div className="flex-1 min-w-[220px] relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Tìm kiếm theo mã đề tài, tên đề tài, sinh viên, GVHD, phản biện..."
-                  className="pl-10"
+                  className="pl-10 text-xs sm:text-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Lọc trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="NOT_SCHEDULED">Chưa xếp lịch</SelectItem>
-                  <SelectItem value="SCHEDULED">Đã lên lịch</SelectItem>
-                  <SelectItem value="IN_PROGRESS">Đang diễn ra</SelectItem>
-                  <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
-                  <SelectItem value="CANCELLED">Đã hủy</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={handleOpenAutoSchedule}
-                variant="outline"
-                className="border-blue-600 text-blue-600 hover:bg-blue-50"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Xếp lịch tự động
-              </Button>
-              <Button onClick={() => setIsCreateModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
-                <Plus className="w-4 h-4 mr-2" />
-                Tạo lịch mới
-              </Button>
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-full sm:w-44 text-xs sm:text-sm">
+                    <SelectValue placeholder="Lọc trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                    <SelectItem value="NOT_SCHEDULED">Chưa xếp lịch</SelectItem>
+                    <SelectItem value="SCHEDULED">Đã lên lịch</SelectItem>
+                    <SelectItem value="IN_PROGRESS">Đang diễn ra</SelectItem>
+                    <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
+                    <SelectItem value="CANCELLED">Đã hủy</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={handleOpenAutoSchedule}
+                  variant="outline"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50 text-xs sm:text-sm flex-1 sm:flex-initial"
+                >
+                  <Sparkles className="w-4 h-4 mr-1.5" />
+                  <span className="truncate">Xếp tự động</span>
+                </Button>
+                <Button 
+                  onClick={() => setIsCreateModalOpen(true)} 
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm flex-1 sm:flex-initial"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" />
+                  <span className="truncate">Tạo lịch mới</span>
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Schedules List */}
+      {/* Schedules Table */}
       {selectedRound && (
-        <div className="space-y-4">
-          {isLoading ? (
-            <Card>
-              <CardContent className="p-12 text-center text-muted-foreground">
-                <Clock className="w-8 h-8 mx-auto mb-2 animate-spin text-primary" />
-                <p>Đang tải danh sách lịch phản biện từ hệ thống...</p>
-              </CardContent>
-            </Card>
-          ) : filteredSchedules.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center text-muted-foreground">
-                <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p className="font-semibold text-foreground">
+        <Card>
+          <CardHeader className="pb-3 border-b border-border">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-600" />
+                  Danh sách Lịch phản biện đề tài ({filteredSchedules.length})
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Đợt: <strong>{selectedRound.round_name}</strong> • Quản lý thời gian, phòng và giảng viên phản biện
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="p-12 text-center text-muted-foreground">
+                <Clock className="w-8 h-8 mx-auto mb-2 animate-spin text-blue-600" />
+                <p className="text-xs">Đang tải danh sách lịch phản biện từ hệ thống...</p>
+              </div>
+            ) : filteredSchedules.length === 0 ? (
+              <div className="p-12 text-center text-muted-foreground">
+                <BookOpen className="w-10 h-10 mx-auto mb-2 opacity-40 text-muted-foreground" />
+                <p className="font-semibold text-sm text-foreground">
                   {searchTerm || filterStatus !== 'all' ? 'Không tìm thấy lịch nào phù hợp' : 'Chưa có lịch phản biện nào'}
                 </p>
-                <p className="text-sm mt-1">
-                  Bạn có thể bấm <strong>"Xếp lịch tự động"</strong> hoặc <strong>"Tạo lịch mới"</strong> để thiết lập lịch cho các đề tài.
+                <p className="text-xs mt-1">
+                  Bấm <strong>"Xếp lịch tự động"</strong> hoặc <strong>"Tạo lịch mới"</strong> để thiết lập lịch phản biện.
                 </p>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredSchedules.map((schedule) => (
-              <Card key={schedule.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-                    <div className="flex-1 min-w-[280px]">
-                      <div className="flex items-center gap-3 mb-1.5">
-                        <h3 className="font-semibold text-lg text-foreground">{schedule.thesisTitle}</h3>
-                        <Badge variant={getStatusBadgeVariant(schedule.status)}>
-                          {translateStatus(schedule.status)}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground font-mono">
-                        <span>Mã: {schedule.thesisCode}</span>
-                        <span>•</span>
-                        <span>{schedule.groupName}</span>
-                      </div>
-                    </div>
-                  </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40">
+                      <th className="text-left py-3 px-3.5 font-semibold text-muted-foreground min-w-[220px]">Tên đề tài & Mã KLTN</th>
+                      <th className="text-left py-3 px-3.5 font-semibold text-muted-foreground min-w-[150px]">Sinh viên thực hiện</th>
+                      <th className="text-left py-3 px-3.5 font-semibold text-muted-foreground min-w-[130px]">GV Hướng dẫn</th>
+                      <th className="text-left py-3 px-3.5 font-semibold text-muted-foreground min-w-[150px]">GV Phản biện</th>
+                      <th className="text-left py-3 px-3.5 font-semibold text-muted-foreground min-w-[130px]">Thời gian</th>
+                      <th className="text-left py-3 px-3.5 font-semibold text-muted-foreground min-w-[120px]">Phòng & Điểm</th>
+                      <th className="text-left py-3 px-3.5 font-semibold text-muted-foreground">Trạng thái</th>
+                      <th className="text-right py-3 px-3.5 font-semibold text-muted-foreground min-w-[100px]">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredSchedules
+                      .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                      .map((schedule) => (
+                        <tr key={schedule.id} className="border-b border-border hover:bg-muted/50 transition-colors">
+                          <td className="py-3 px-3.5">
+                            <div className="font-semibold text-foreground text-xs leading-snug">{schedule.thesisTitle}</div>
+                            <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                              {schedule.thesisCode} • {schedule.groupName}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3.5">
+                            <div className="space-y-0.5">
+                              {schedule.students.map((student, idx) => (
+                                <div key={idx} className="font-medium text-foreground text-[11px] flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                                  <span>{student}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3.5 text-foreground font-medium">
+                            {schedule.supervisor}
+                          </td>
+                          <td className="py-3 px-3.5 text-muted-foreground">
+                            <div className="text-foreground font-medium">1. {schedule.reviewer1 || 'Chưa phân công'}</div>
+                            {schedule.reviewer2 && (
+                              <div className="text-[11px] text-muted-foreground mt-0.5">2. {schedule.reviewer2}</div>
+                            )}
+                          </td>
+                          <td className="py-3 px-3.5 text-muted-foreground">
+                            <div className="font-medium text-foreground">
+                              {schedule.scheduledDate ? new Date(schedule.scheduledDate).toLocaleDateString('vi-VN') : 'Chưa xếp ngày'}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <Clock className="w-3 h-3" />
+                              <span>{schedule.scheduledTime || '--:--'}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3.5 text-muted-foreground">
+                            <div className="flex items-center gap-1 text-foreground font-medium">
+                              <MapPin className="w-3 h-3 text-red-500" />
+                              <span>{schedule.location || 'Chưa xếp phòng'}</span>
+                            </div>
+                            {schedule.reviewScore1 !== null && schedule.reviewScore1 !== undefined && (
+                              <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                Điểm: {schedule.reviewScore1} {schedule.reviewScore2 ? ` / ${schedule.reviewScore2}` : ''}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 px-3.5">
+                            <Badge variant={getStatusBadgeVariant(schedule.status)} className="text-[10px]">
+                              {translateStatus(schedule.status)}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                onClick={() => openEditModal(schedule)}
+                                title={schedule.status === 'NOT_SCHEDULED' ? 'Xếp lịch' : 'Chỉnh sửa lịch'}
+                              >
+                                {schedule.status === 'NOT_SCHEDULED' ? (
+                                  <Calendar className="w-3.5 h-3.5 mr-1" />
+                                ) : (
+                                  <Edit className="w-3.5 h-3.5 mr-1" />
+                                )}
+                                <span>{schedule.status === 'NOT_SCHEDULED' ? 'Xếp' : 'Sửa'}</span>
+                              </Button>
+                              {schedule.status !== 'NOT_SCHEDULED' && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => handleDeleteSchedule(schedule.thesisId)}
+                                  title="Hủy lịch phản biện"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-lg bg-muted/40 border border-border/50 text-sm">
-                    {/* Sinh viên */}
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1 flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5" /> Sinh viên thực hiện
-                      </p>
-                      <div className="space-y-0.5">
-                        {schedule.students.map((student, idx) => (
-                          <p key={idx} className="font-medium text-foreground">• {student}</p>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Giảng viên */}
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">
-                        GV Hướng dẫn
-                      </p>
-                      <p className="font-medium text-foreground">{schedule.supervisor}</p>
-
-                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-2 mb-1">
-                        GV Phản biện
-                      </p>
-                      <p className="font-medium text-foreground">1. {schedule.reviewer1 || 'Chưa phân công'}</p>
-                      {schedule.reviewer2 && (
-                        <p className="font-medium text-foreground">2. {schedule.reviewer2}</p>
-                      )}
-                    </div>
-
-                    {/* Thời gian */}
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1 flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" /> Thời gian phản biện
-                      </p>
-                      <div className="flex items-center gap-2 font-medium text-foreground">
-                        <span>{schedule.scheduledDate ? new Date(schedule.scheduledDate).toLocaleDateString('vi-VN') : 'Chưa xếp ngày'}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{schedule.scheduledTime || '--:--'}</span>
-                      </div>
-                    </div>
-
-                    {/* Địa điểm */}
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1 flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5" /> Địa điểm / Phòng
-                      </p>
-                      <p className="font-medium text-foreground">{schedule.location || 'Chưa chỉ định'}</p>
-                      {schedule.reviewScore1 !== null && schedule.reviewScore1 !== undefined && (
-                        <div className="mt-2 text-xs font-semibold text-emerald-600">
-                          Điểm PB: {schedule.reviewScore1} {schedule.reviewScore2 ? ` / ${schedule.reviewScore2}` : ''}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-border">
-                    <Button
-                      size="sm"
-                      variant={schedule.status === 'NOT_SCHEDULED' ? 'outline' : 'ghost'}
-                      className={schedule.status === 'NOT_SCHEDULED' ? 'border-primary text-primary hover:bg-primary/5' : ''}
-                      onClick={() => openEditModal(schedule)}
-                    >
-                      {schedule.status === 'NOT_SCHEDULED' ? (
-                        <>
-                          <Calendar className="w-4 h-4 mr-1.5" />
-                          Xếp lịch
-                        </>
-                      ) : (
-                        <>
-                          <Edit className="w-4 h-4 mr-1.5" />
-                          Chỉnh sửa
-                        </>
-                      )}
-                    </Button>
-                    {schedule.status !== 'NOT_SCHEDULED' && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDeleteSchedule(schedule.thesisId)}
-                      >
-                        <Trash2 className="w-4 h-4 mr-1.5" />
-                        Hủy lịch
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
+            {/* Phân trang */}
+            {filteredSchedules.length > 0 && (
+              <TablePagination
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalItems={filteredSchedules.length}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* MODAL: Tạo lịch phản biện mới */}

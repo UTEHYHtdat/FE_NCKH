@@ -1,10 +1,10 @@
-import axios from './axios';
-import qs from 'qs';
+import axios from "./axios";
+import qs from "qs";
 
 const filterObject = (obj: any) => {
   const filtered: any = {};
   for (const key in obj) {
-    if (obj[key] !== null && obj[key] !== undefined && obj[key] !== '') {
+    if (obj[key] !== null && obj[key] !== undefined && obj[key] !== "") {
       filtered[key] = obj[key];
     }
   }
@@ -12,12 +12,17 @@ const filterObject = (obj: any) => {
 };
 
 export const APIHelper = (api: string) => ({
-  search: (params: any, option?: any) => axios.get(api, { params: filterObject(params), ...option }),
-  count: (params: any, option?: any) => axios.get(api + 'count', { params: filterObject(params), ...option }),
-  fetch: (params: any, option?: any) => axios.get(api, { params: filterObject(params), ...option }),
+  search: (params: any, option?: any) =>
+    axios.get(api, { params: filterObject(params), ...option }),
+  count: (params: any, option?: any) =>
+    axios.get(api + "count", { params: filterObject(params), ...option }),
+  fetch: (params: any, option?: any) =>
+    axios.get(api, { params: filterObject(params), ...option }),
   fetchOne: (id: string | number, option?: any) => axios.get(api + id, option),
-  create: (params: any, options?: any) => axios.post(api, filterObject(params), options),
-  update: (id: string | number, params: any, option?: any) => axios.put(api + id, params, option),
+  create: (params: any, options?: any) =>
+    axios.post(api, filterObject(params), options),
+  update: (id: string | number, params: any, option?: any) =>
+    axios.put(api + id, params, option),
   remove: (id: string | number, option?: any) => axios.delete(api + id, option),
   fetchRaw: (params: any) => axios.get(api, { params }),
 
@@ -33,15 +38,19 @@ export const APIRespository = APIHelper;
 // LEGACY API CLIENT & SERVICES
 // ==============================================
 
-
 class ApiError extends Error {
   status: number;
   response?: any;
   statusText?: string;
 
-  constructor(message: string, status: number, response?: any, statusText?: string) {
+  constructor(
+    message: string,
+    status: number,
+    response?: any,
+    statusText?: string,
+  ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
     this.status = status;
     this.response = response;
     this.statusText = statusText;
@@ -56,8 +65,16 @@ class ApiClient {
     } catch (error: any) {
       if (error.response) {
         const errorData = error.response.data;
-        const errorMessage = errorData?.error || errorData?.message || `HTTP error! status: ${error.response.status}`;
-        throw new ApiError(errorMessage, error.response.status, errorData, error.response.statusText);
+        const errorMessage =
+          errorData?.error ||
+          errorData?.message ||
+          `HTTP error! status: ${error.response.status}`;
+        throw new ApiError(
+          errorMessage,
+          error.response.status,
+          errorData,
+          error.response.statusText,
+        );
       }
       throw error;
     }
@@ -67,11 +84,20 @@ class ApiClient {
     return this.handleRequest<T>(axios.get(endpoint));
   }
 
-  async post<T>(endpoint: string, data?: any, includeAuth: boolean = true, customHeaders?: HeadersInit): Promise<T> {
+  async post<T>(
+    endpoint: string,
+    data?: any,
+    includeAuth: boolean = true,
+    customHeaders?: HeadersInit,
+  ): Promise<T> {
     return this.handleRequest<T>(axios.post(endpoint, data));
   }
 
-  async put<T>(endpoint: string, data?: any, includeAuth: boolean = true): Promise<T> {
+  async put<T>(
+    endpoint: string,
+    data?: any,
+    includeAuth: boolean = true,
+  ): Promise<T> {
     return this.handleRequest<T>(axios.put(endpoint, data));
   }
 
@@ -81,7 +107,6 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
-
 
 // --- adminService.ts ---
 import type {
@@ -99,7 +124,7 @@ import type {
   UpdateUserRequest,
   CreateStudentRequest,
   CreateInstructorRequest,
-} from '@/types/api';
+} from "@/types/api";
 
 export const adminService = {
   // Faculty Management
@@ -108,7 +133,7 @@ export const adminService = {
    * GET /api/admin/faculties
    */
   async getFaculties(): Promise<Faculty[]> {
-    return apiClient.get<Faculty[]>('/api/admin/faculties');
+    return apiClient.get<Faculty[]>("/api/admin/faculties");
   },
 
   /**
@@ -124,14 +149,17 @@ export const adminService = {
    * POST /api/admin/faculties
    */
   async createFaculty(data: CreateFacultyRequest): Promise<Faculty> {
-    return apiClient.post<Faculty>('/api/admin/faculties', data);
+    return apiClient.post<Faculty>("/api/admin/faculties", data);
   },
 
   /**
    * Update faculty
    * PUT /api/admin/faculties/:id
    */
-  async updateFaculty(id: number, data: UpdateFacultyRequest): Promise<Faculty> {
+  async updateFaculty(
+    id: number,
+    data: UpdateFacultyRequest,
+  ): Promise<Faculty> {
     return apiClient.put<Faculty>(`/api/admin/faculties/${id}`, data);
   },
 
@@ -148,14 +176,16 @@ export const adminService = {
    * Get all departments
    * GET /api/admin/departments
    */
-  async getDepartments(params?: { faculty_id?: number }): Promise<Department[]> {
+  async getDepartments(params?: {
+    faculty_id?: number;
+  }): Promise<Department[]> {
     const queryParams = new URLSearchParams();
     if (params?.faculty_id) {
-      queryParams.append('faculty_id', params.faculty_id.toString());
+      queryParams.append("faculty_id", params.faculty_id.toString());
     }
     const queryString = queryParams.toString();
     return apiClient.get<Department[]>(
-      `/api/admin/departments${queryString ? `?${queryString}` : ''}`
+      `/api/admin/departments${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -172,14 +202,17 @@ export const adminService = {
    * POST /api/admin/departments
    */
   async createDepartment(data: CreateDepartmentRequest): Promise<Department> {
-    return apiClient.post<Department>('/api/admin/departments', data);
+    return apiClient.post<Department>("/api/admin/departments", data);
   },
 
   /**
    * Update department
    * PUT /api/admin/departments/:id
    */
-  async updateDepartment(id: number, data: UpdateDepartmentRequest): Promise<Department> {
+  async updateDepartment(
+    id: number,
+    data: UpdateDepartmentRequest,
+  ): Promise<Department> {
     return apiClient.put<Department>(`/api/admin/departments/${id}`, data);
   },
 
@@ -188,7 +221,9 @@ export const adminService = {
    * DELETE /api/admin/departments/:id
    */
   async deleteDepartment(id: number): Promise<{ message: string }> {
-    return apiClient.delete<{ message: string }>(`/api/admin/departments/${id}`);
+    return apiClient.delete<{ message: string }>(
+      `/api/admin/departments/${id}`,
+    );
   },
 
   // Class Management
@@ -199,11 +234,11 @@ export const adminService = {
   async getClasses(params?: { major_id?: number }): Promise<Class[]> {
     const queryParams = new URLSearchParams();
     if (params?.major_id) {
-      queryParams.append('major_id', params.major_id.toString());
+      queryParams.append("major_id", params.major_id.toString());
     }
     const queryString = queryParams.toString();
     return apiClient.get<Class[]>(
-      `/api/admin/classes${queryString ? `?${queryString}` : ''}`
+      `/api/admin/classes${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -220,7 +255,7 @@ export const adminService = {
    * POST /api/admin/classes
    */
   async createClass(data: CreateClassRequest): Promise<Class> {
-    return apiClient.post<Class>('/api/admin/classes', data);
+    return apiClient.post<Class>("/api/admin/classes", data);
   },
 
   /**
@@ -248,15 +283,18 @@ export const adminService = {
     role?: string;
     status?: string;
     search?: string;
+    class_id?: number | string;
   }): Promise<UserManagement[]> {
     const queryParams = new URLSearchParams();
-    if (params?.role) queryParams.append('role', params.role);
-    if (params?.status) queryParams.append('status', params.status);
-    if (params?.search) queryParams.append('search', params.search);
+    if (params?.role) queryParams.append("role", params.role);
+    if (params?.status) queryParams.append("status", params.status);
+    if (params?.search) queryParams.append("search", params.search);
+    if (params?.class_id)
+      queryParams.append("class_id", params.class_id.toString());
 
     const queryString = queryParams.toString();
     return apiClient.get<UserManagement[]>(
-      `/api/admin/users${queryString ? `?${queryString}` : ''}`
+      `/api/admin/users${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -273,14 +311,17 @@ export const adminService = {
    * POST /api/admin/users
    */
   async createUser(data: CreateUserRequest): Promise<UserManagement> {
-    return apiClient.post<UserManagement>('/api/admin/users', data);
+    return apiClient.post<UserManagement>("/api/admin/users", data);
   },
 
   /**
    * Update user
    * PUT /api/admin/users/:id
    */
-  async updateUser(id: number, data: UpdateUserRequest): Promise<UserManagement> {
+  async updateUser(
+    id: number,
+    data: UpdateUserRequest,
+  ): Promise<UserManagement> {
     return apiClient.put<UserManagement>(`/api/admin/users/${id}`, data);
   },
 
@@ -297,7 +338,7 @@ export const adminService = {
    * POST /api/admin/students
    */
   async createStudent(data: CreateStudentRequest): Promise<any> {
-    return apiClient.post<any>('/api/admin/users/students', data);
+    return apiClient.post<any>("/api/admin/users/students", data);
   },
 
   /**
@@ -305,7 +346,22 @@ export const adminService = {
    * POST /api/admin/instructors
    */
   async createInstructor(data: CreateInstructorRequest): Promise<any> {
-    return apiClient.post<any>('/api/admin/users/instructors', data);
+    return apiClient.post<any>("/api/admin/users/instructors", data);
+  },
+
+  /**
+   * Import students from Excel and batch create user accounts
+   * POST /api/admin/users/import-excel
+   */
+  async importStudentsExcel(formData: FormData): Promise<any> {
+    return apiClient.post<any>(
+      "/api/admin/users/import-excel",
+      formData,
+      true,
+      {
+        "Content-Type": "multipart/form-data",
+      },
+    );
   },
 
   /**
@@ -320,13 +376,12 @@ export const adminService = {
     totalDepartments: number;
     totalClasses: number;
   }> {
-    return apiClient.get<any>('/api/admin/statistics');
+    return apiClient.get<any>("/api/admin/statistics");
   },
 };
 
-
 // --- aiChatService.ts ---
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const aiChatService = {
   /**
@@ -338,23 +393,23 @@ export const aiChatService = {
     message: string,
     conversationId?: string,
     context?: any,
-    apiKey?: string
+    apiKey?: string,
   ): Promise<{ reply: string; conversationId: string }> {
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     }
 
     if (apiKey) {
-      headers['x-api-key'] = apiKey;
+      headers["x-api-key"] = apiKey;
     }
 
     const response = await fetch(`${BASE_URL}/api/chat/message`, {
-      method: 'POST',
+      method: "POST",
       headers,
       body: JSON.stringify({
         message,
@@ -364,8 +419,12 @@ export const aiChatService = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Failed to send message' }));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Failed to send message" }));
+      throw new Error(
+        errorData.error || `HTTP error! status: ${response.status}`,
+      );
     }
 
     return response.json();
@@ -378,32 +437,35 @@ export const aiChatService = {
    */
   async getConversation(id: string, apiKey?: string): Promise<any> {
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     }
 
     if (apiKey) {
-      headers['x-api-key'] = apiKey;
+      headers["x-api-key"] = apiKey;
     }
 
     const response = await fetch(`${BASE_URL}/api/chat/conversations/${id}`, {
-      method: 'GET',
+      method: "GET",
       headers,
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Failed to get conversation' }));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Failed to get conversation" }));
+      throw new Error(
+        errorData.error || `HTTP error! status: ${response.status}`,
+      );
     }
 
     return response.json();
   },
 };
-
 
 // --- authService.ts ---
 import type {
@@ -414,7 +476,7 @@ import type {
   User,
   Policy,
   RoleWithPolicies,
-} from '@/types/api';
+} from "@/types/api";
 
 export const authService = {
   /**
@@ -422,17 +484,21 @@ export const authService = {
    * POST /api/auth/login
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await apiClient.post<{ success: boolean; data: LoginResponse; message: string }>('/api/v1/auth/login', credentials, false);
-    
+    const response = await apiClient.post<{
+      success: boolean;
+      data: LoginResponse;
+      message: string;
+    }>("/api/v1/auth/login", credentials, false);
+
     // Extract data from new response format
     const loginData = response.data;
-    
+
     // Store token in localStorage
     if (loginData.token) {
-      localStorage.setItem('token', loginData.token);
-      localStorage.setItem('user', JSON.stringify(loginData.user));
+      localStorage.setItem("token", loginData.token);
+      localStorage.setItem("user", JSON.stringify(loginData.user));
     }
-    
+
     return loginData;
   },
 
@@ -442,17 +508,20 @@ export const authService = {
    */
   async logout(): Promise<LogoutResponse | null> {
     try {
-
       // Send auth token to backend so it can log req.user.id
-      const response = await apiClient.post<{ success: boolean; data: LogoutResponse; message: string }>('/api/auth/logout', undefined, true);
+      const response = await apiClient.post<{
+        success: boolean;
+        data: LogoutResponse;
+        message: string;
+      }>("/api/auth/logout", undefined, true);
       return response.data;
     } catch (error) {
-      console.error('Logout API failed:', error);
+      console.error("Logout API failed:", error);
       return null;
     } finally {
       // Clear token and user from localStorage regardless of API success
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
     }
   },
 
@@ -460,9 +529,16 @@ export const authService = {
    * Get current user profile
    * GET /api/auth/profile
    */
-  async getProfile(userId: number, role: 'student' | 'instructor'): Promise<Profile> {
+  async getProfile(
+    userId: number,
+    role: "student" | "instructor",
+  ): Promise<Profile> {
     const queryParams = `?user_id=${userId}&role=${role}`;
-    const response = await apiClient.get<{ success: boolean; data: Profile; message: string }>(`/api/v1/auth/profile${queryParams}`);
+    const response = await apiClient.get<{
+      success: boolean;
+      data: Profile;
+      message: string;
+    }>(`/api/v1/auth/profile${queryParams}`);
     return response.data;
   },
 
@@ -471,7 +547,11 @@ export const authService = {
    * GET /api/auth/me
    */
   async getMe(): Promise<User> {
-    const response = await apiClient.get<{ success: boolean; data: User; message: string }>('/api/v1/auth/me');
+    const response = await apiClient.get<{
+      success: boolean;
+      data: User;
+      message: string;
+    }>("/api/v1/auth/me");
     return response.data;
   },
 
@@ -479,7 +559,7 @@ export const authService = {
    * Get stored user from localStorage
    */
   getStoredUser(): User | null {
-    const userStr = localStorage.getItem('user');
+    const userStr = localStorage.getItem("user");
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
@@ -501,23 +581,23 @@ export const authService = {
    * Get stored token from localStorage
    */
   getToken(): string | null {
-    return localStorage.getItem('token');
+    return localStorage.getItem("token");
   },
 
   /**
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
-    return !!localStorage.getItem('token');
+    return !!localStorage.getItem("token");
   },
 
   /**
    * Clear authentication data
    */
   clearAuth(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('policies');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("policies");
   },
 };
 
@@ -527,12 +607,15 @@ export const policyService = {
    * Lấy danh sách toàn bộ chính sách
    * GET /api/policies
    */
-  async getPolicies(): Promise<{ policies: Policy[]; grouped: Record<string, Policy[]> }> {
+  async getPolicies(): Promise<{
+    policies: Policy[];
+    grouped: Record<string, Policy[]>;
+  }> {
     const response = await apiClient.get<{
       success: boolean;
       message: string;
       data: { policies: Policy[]; grouped: Record<string, Policy[]> };
-    }>('/api/policies');
+    }>("/api/policies");
     return response.data;
   },
 
@@ -545,7 +628,7 @@ export const policyService = {
       success: boolean;
       message: string;
       data: RoleWithPolicies[];
-    }>('/api/roles');
+    }>("/api/roles");
     return response.data;
   },
 
@@ -553,11 +636,23 @@ export const policyService = {
    * Lấy danh sách Policies của một Role cụ thể
    * GET /api/roles/:id/policies
    */
-  async getRolePolicies(roleId: number): Promise<{ roleId: number; roleCode: string; roleName: string; policies: string[] }> {
+  async getRolePolicies(
+    roleId: number,
+  ): Promise<{
+    roleId: number;
+    roleCode: string;
+    roleName: string;
+    policies: string[];
+  }> {
     const response = await apiClient.get<{
       success: boolean;
       message: string;
-      data: { roleId: number; roleCode: string; roleName: string; policies: string[] };
+      data: {
+        roleId: number;
+        roleCode: string;
+        roleName: string;
+        policies: string[];
+      };
     }>(`/api/roles/${roleId}/policies`);
     return response.data;
   },
@@ -566,7 +661,10 @@ export const policyService = {
    * Cập nhật danh sách Policies cho Role
    * PUT /api/roles/:id/policies
    */
-  async updateRolePolicies(roleId: number, policies: string[]): Promise<{ roleId: number; roleCode: string; policies: string[] }> {
+  async updateRolePolicies(
+    roleId: number,
+    policies: string[],
+  ): Promise<{ roleId: number; roleCode: string; policies: string[] }> {
     const response = await apiClient.put<{
       success: boolean;
       message: string;
@@ -576,21 +674,55 @@ export const policyService = {
   },
 };
 
-
-
 // --- chatboxService.ts ---
 
 // ─── Types đồng bộ với backend ─────────────────────────────────────────────
+
+export interface MessageAttachment {
+  id: number;
+  message_id?: number;
+  file_name: string;
+  file_path: string;
+  file_type?: string;
+  file_size?: number | null;
+  thumbnail_path?: string | null;
+}
+
+export interface MessageReaction {
+  id: number;
+  message_id?: number;
+  user_id: number;
+  reaction_type: string;
+  reaction_icon?: string;
+  users?: {
+    id: number;
+    full_name: string;
+    avatar?: string;
+  };
+}
+
+export interface MessageMention {
+  id: number;
+  message_id?: number;
+  mentioned_user_id: number;
+  users?: {
+    id: number;
+    full_name: string;
+    avatar?: string;
+  };
+}
 
 export interface ConversationMember {
   user_id: number;
   role: string;
   unread_count: number;
+  is_active?: boolean;
   users: {
     id: number;
     username: string;
     full_name: string;
     avatar?: string;
+    status?: boolean;
   };
 }
 
@@ -604,6 +736,7 @@ export interface Conversation {
   created_at: string;
   conversation_members: ConversationMember[];
   messages?: ChatMessage[];
+  lastMessage?: ChatMessage | null;
 }
 
 export interface ChatMessage {
@@ -611,7 +744,18 @@ export interface ChatMessage {
   conversation_id: number;
   sender_id: number;
   content: string;
+  is_edited?: boolean;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  parent_message_id?: number | null;
+  parentMessage?: {
+    id: number;
+    content: string;
+    sender_id: number;
+    users?: { id: number; full_name: string };
+  } | null;
   created_at: string;
+  updated_at?: string;
   users: {
     id: number;
     username: string;
@@ -619,6 +763,9 @@ export interface ChatMessage {
     avatar?: string;
   };
   message_read_status?: { user_id: number; read_at: string }[];
+  message_attachments?: MessageAttachment[];
+  message_reactions?: MessageReaction[];
+  message_mentions?: MessageMention[];
 }
 
 export interface MessagesResponse {
@@ -633,17 +780,20 @@ export const chatboxService = {
    * GET /api/v1/chatbox/conversations
    */
   async getConversations(): Promise<Conversation[]> {
-    return apiClient.get<Conversation[]>('/api/v1/chatbox/conversations');
+    return apiClient.get<Conversation[]>("/api/v1/chatbox/conversations");
   },
 
   /**
    * Lấy tin nhắn của 1 conversation (cursor pagination)
    * GET /api/v1/chatbox/conversations/:id/messages?cursor=X
    */
-  async getMessages(conversationId: number, cursor?: number): Promise<MessagesResponse> {
-    const query = cursor ? `?cursor=${cursor}` : '';
+  async getMessages(
+    conversationId: number,
+    cursor?: number,
+  ): Promise<MessagesResponse> {
+    const query = cursor ? `?cursor=${cursor}` : "";
     return apiClient.get<MessagesResponse>(
-      `/api/v1/chatbox/conversations/${conversationId}/messages${query}`
+      `/api/v1/chatbox/conversations/${conversationId}/messages${query}`,
     );
   },
 
@@ -651,11 +801,97 @@ export const chatboxService = {
    * Gửi tin nhắn qua HTTP (fallback khi socket mất kết nối)
    * POST /api/v1/chatbox/conversations/:id/messages
    */
-  async sendMessage(conversationId: number, content: string): Promise<{ success: boolean; message: ChatMessage }> {
-    return apiClient.post(`/api/v1/chatbox/conversations/${conversationId}/messages`, { content });
+  async sendMessage(
+    conversationId: number,
+    content: string,
+  ): Promise<{ success: boolean; message: ChatMessage }> {
+    return apiClient.post(
+      `/api/v1/chatbox/conversations/${conversationId}/messages`,
+      { content },
+    );
+  },
+
+  /**
+   * Upload file đính kèm vào cuộc trò chuyện
+   * POST /api/v1/chatbox/conversations/:id/attachments
+   */
+  async uploadAttachments(
+    conversationId: number,
+    files: File[],
+    content?: string,
+  ): Promise<{
+    success: boolean;
+    message: ChatMessage;
+    attachments: MessageAttachment[];
+  }> {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
+    if (content) formData.append("content", content);
+
+    return apiClient.post(
+      `/api/v1/chatbox/conversations/${conversationId}/attachments`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
+  },
+
+  /**
+   * Lấy danh sách thành viên của cuộc trò chuyện
+   * GET /api/v1/chatbox/conversations/:id/members
+   */
+  async getMembers(
+    conversationId: number,
+  ): Promise<{ success: boolean; data: ConversationMember[] }> {
+    return apiClient.get(
+      `/api/v1/chatbox/conversations/${conversationId}/members`,
+    );
+  },
+
+  /**
+   * Thêm thành viên vào cuộc trò chuyện
+   * POST /api/v1/chatbox/conversations/:id/members
+   */
+  async addMember(
+    conversationId: number,
+    userId: number,
+    role: string = "MEMBER",
+  ): Promise<{ success: boolean; data: any }> {
+    return apiClient.post(
+      `/api/v1/chatbox/conversations/${conversationId}/members`,
+      { userId, role },
+    );
+  },
+
+  /**
+   * Xóa thành viên khỏi cuộc trò chuyện
+   * DELETE /api/v1/chatbox/conversations/:id/members/:userId
+   */
+  async removeMember(
+    conversationId: number,
+    userId: number,
+  ): Promise<{ success: boolean; message: string }> {
+    return apiClient.delete(
+      `/api/v1/chatbox/conversations/${conversationId}/members/${userId}`,
+    );
+  },
+
+  /**
+   * Cập nhật vai trò thành viên
+   * PUT /api/v1/chatbox/conversations/:id/members/:userId/role
+   */
+  async updateMemberRole(
+    conversationId: number,
+    userId: number,
+    role: string,
+  ): Promise<{ success: boolean; data: any }> {
+    return apiClient.put(
+      `/api/v1/chatbox/conversations/${conversationId}/members/${userId}/role`,
+      { role },
+    );
   },
 };
-
 
 // --- cmsService.ts ---
 
@@ -681,13 +917,13 @@ export const cmsService = {
     limit?: number;
   }): Promise<Content[]> {
     const queryParams = new URLSearchParams();
-    if (params?.type) queryParams.append('type', params.type);
-    if (params?.authorId) queryParams.append('authorId', params.authorId);
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    
+    if (params?.type) queryParams.append("type", params.type);
+    if (params?.authorId) queryParams.append("authorId", params.authorId);
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+
     const queryString = queryParams.toString();
     return apiClient.get<Content[]>(
-      `/api/content${queryString ? `?${queryString}` : ''}`
+      `/api/content${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -711,7 +947,7 @@ export const cmsService = {
     type: string;
     authorId: string;
   }): Promise<Content> {
-    return apiClient.post<Content>('/api/content', data);
+    return apiClient.post<Content>("/api/content", data);
   },
 
   /**
@@ -733,7 +969,6 @@ export const cmsService = {
   },
 };
 
-
 // --- councilService.ts ---
 import type {
   CreateCouncilRequest,
@@ -741,7 +976,7 @@ import type {
   UpdateCouncilRequest,
   DeleteCouncilResponse,
   StandardResponse,
-} from '@/types/api';
+} from "@/types/api";
 
 export const councilService = {
   /**
@@ -749,7 +984,7 @@ export const councilService = {
    * POST /api/admin/councils
    */
   async createCouncil(data: CreateCouncilRequest): Promise<Council> {
-    return apiClient.post<Council>('/api/admin/councils', data);
+    return apiClient.post<Council>("/api/admin/councils", data);
   },
 
   /**
@@ -762,13 +997,15 @@ export const councilService = {
     council_code?: string;
   }): Promise<Council[]> {
     const queryParams = new URLSearchParams();
-    if (params?.thesis_round_id) queryParams.append('thesis_round_id', params.thesis_round_id.toString());
-    if (params?.status) queryParams.append('status', params.status);
-    if (params?.council_code) queryParams.append('council_code', params.council_code);
-    
+    if (params?.thesis_round_id)
+      queryParams.append("thesis_round_id", params.thesis_round_id.toString());
+    if (params?.status) queryParams.append("status", params.status);
+    if (params?.council_code)
+      queryParams.append("council_code", params.council_code);
+
     const queryString = queryParams.toString();
     return apiClient.get<Council[]>(
-      `/api/admin/councils${queryString ? `?${queryString}` : ''}`
+      `/api/admin/councils${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -784,7 +1021,10 @@ export const councilService = {
    * Update council information (ADMIN only)
    * PUT /api/admin/councils/:id
    */
-  async updateCouncil(id: number, data: UpdateCouncilRequest): Promise<Council> {
+  async updateCouncil(
+    id: number,
+    data: UpdateCouncilRequest,
+  ): Promise<Council> {
     return apiClient.put<Council>(`/api/admin/councils/${id}`, data);
   },
 
@@ -796,7 +1036,6 @@ export const councilService = {
     return apiClient.delete<DeleteCouncilResponse>(`/api/admin/councils/${id}`);
   },
 };
-
 
 // --- defenseService.ts ---
 import type {
@@ -811,39 +1050,51 @@ import type {
   DefenseResult,
   DefenseSchedule,
   DefenseResults,
-} from '@/types/api';
+} from "@/types/api";
 
 export const defenseService = {
   /**
    * Create a defense council (Admin only)
    * POST /api/defense-councils
    */
-  async createDefenseCouncil(data: CreateDefenseCouncilRequest): Promise<DefenseCouncil> {
-    return apiClient.post<DefenseCouncil>('/api/defense-councils', data);
+  async createDefenseCouncil(
+    data: CreateDefenseCouncilRequest,
+  ): Promise<DefenseCouncil> {
+    return apiClient.post<DefenseCouncil>("/api/defense-councils", data);
   },
 
   /**
    * Add a member to defense council (Admin only)
    * POST /api/defense-councils/:id/members
    */
-  async addCouncilMember(id: number, data: AddCouncilMemberRequest): Promise<CouncilMember> {
-    return apiClient.post<CouncilMember>(`/api/defense-councils/${id}/members`, data);
+  async addCouncilMember(
+    id: number,
+    data: AddCouncilMemberRequest,
+  ): Promise<CouncilMember> {
+    return apiClient.post<CouncilMember>(
+      `/api/defense-councils/${id}/members`,
+      data,
+    );
   },
 
   /**
    * Create a defense assignment (Admin only)
    * POST /api/defense-assignments
    */
-  async createDefenseAssignment(data: CreateDefenseAssignmentRequest): Promise<DefenseAssignment> {
-    return apiClient.post<DefenseAssignment>('/api/defense-assignments', data);
+  async createDefenseAssignment(
+    data: CreateDefenseAssignmentRequest,
+  ): Promise<DefenseAssignment> {
+    return apiClient.post<DefenseAssignment>("/api/defense-assignments", data);
   },
 
   /**
    * Submit defense result (Instructor only)
    * POST /api/defense-results
    */
-  async submitDefenseResult(data: SubmitDefenseResultRequest): Promise<DefenseResult> {
-    return apiClient.post<DefenseResult>('/api/defense-results', data);
+  async submitDefenseResult(
+    data: SubmitDefenseResultRequest,
+  ): Promise<DefenseResult> {
+    return apiClient.post<DefenseResult>("/api/defense-results", data);
   },
 
   /**
@@ -851,7 +1102,9 @@ export const defenseService = {
    * PUT /api/defense-councils/:id/complete
    */
   async completeDefenseCouncil(id: number): Promise<DefenseCouncil> {
-    return apiClient.put<DefenseCouncil>(`/api/defense-councils/${id}/complete`);
+    return apiClient.put<DefenseCouncil>(
+      `/api/defense-councils/${id}/complete`,
+    );
   },
 
   /**
@@ -879,7 +1132,6 @@ export const defenseService = {
   },
 };
 
-
 // --- gradingService.ts ---
 import type {
   CreateReviewAssignmentRequest,
@@ -901,31 +1153,41 @@ import type {
   ThesisScoresResponse,
   WeeklyReportReviewRequest,
   WeeklyReportReviewResponse,
-} from '@/types/api';
+} from "@/types/api";
 
 export const gradingService = {
   /**
    * Get supervision students (Instructor only)
    * GET /api/v1/thesis/instructor/grading/supervision-students
    */
-  async getSupervisionStudents(instructorId?: number, thesisRoundId?: number): Promise<SupervisionStudent[]> {
+  async getSupervisionStudents(
+    instructorId?: number,
+    thesisRoundId?: number,
+  ): Promise<SupervisionStudent[]> {
     const params = new URLSearchParams();
-    if (instructorId) params.append('instructorId', instructorId.toString());
-    if (thesisRoundId) params.append('thesisRoundId', thesisRoundId.toString());
+    if (instructorId) params.append("instructorId", instructorId.toString());
+    if (thesisRoundId) params.append("thesisRoundId", thesisRoundId.toString());
     const queryString = params.toString();
-    return apiClient.get<SupervisionStudent[]>(`/api/v1/thesis/instructor/grading/supervision-students${queryString ? `?${queryString}` : ''}`);
+    return apiClient.get<SupervisionStudent[]>(
+      `/api/v1/thesis/instructor/grading/supervision-students${queryString ? `?${queryString}` : ""}`,
+    );
   },
 
   /**
    * Get review students (Instructor only)
    * GET /api/v1/thesis/instructor/grading/review-students
    */
-  async getReviewStudents(instructorId?: number, thesisRoundId?: number): Promise<ReviewStudent[]> {
+  async getReviewStudents(
+    instructorId?: number,
+    thesisRoundId?: number,
+  ): Promise<ReviewStudent[]> {
     const params = new URLSearchParams();
-    if (instructorId) params.append('instructorId', instructorId.toString());
-    if (thesisRoundId) params.append('thesisRoundId', thesisRoundId.toString());
+    if (instructorId) params.append("instructorId", instructorId.toString());
+    if (thesisRoundId) params.append("thesisRoundId", thesisRoundId.toString());
     const queryString = params.toString();
-    return apiClient.get<ReviewStudent[]>(`/api/v1/thesis/instructor/grading/review-students${queryString ? `?${queryString}` : ''}`);
+    return apiClient.get<ReviewStudent[]>(
+      `/api/v1/thesis/instructor/grading/review-students${queryString ? `?${queryString}` : ""}`,
+    );
   },
 
   /**
@@ -934,9 +1196,11 @@ export const gradingService = {
    */
   async getDefenseStudents(thesisRoundId?: number): Promise<any[]> {
     const params = new URLSearchParams();
-    if (thesisRoundId) params.append('thesisRoundId', thesisRoundId.toString());
+    if (thesisRoundId) params.append("thesisRoundId", thesisRoundId.toString());
     const queryString = params.toString();
-    return apiClient.get<any[]>(`/api/v1/thesis/instructor/defense/assigned-theses${queryString ? `?${queryString}` : ''}`);
+    return apiClient.get<any[]>(
+      `/api/v1/thesis/instructor/defense/assigned-theses${queryString ? `?${queryString}` : ""}`,
+    );
   },
 
   /**
@@ -944,8 +1208,50 @@ export const gradingService = {
    * GET /api/v1/thesis/admin/grading-templates
    */
   async getGradingTemplates(type?: string): Promise<any[]> {
-    const endpoint = `/api/v1/thesis/admin/grading-templates${type ? `?type=${type}` : ''}`;
+    const endpoint = `/api/v1/thesis/admin/grading-templates${type ? `?type=${type}` : ""}`;
     return apiClient.get<any[]>(endpoint);
+  },
+
+  /**
+   * Create grading template
+   * POST /api/v1/thesis/admin/grading-templates
+   */
+  async createGradingTemplate(formData: FormData | any): Promise<any> {
+    return apiClient.post<any>(
+      "/api/v1/thesis/admin/grading-templates",
+      formData,
+      true,
+      {
+        "Content-Type": "multipart/form-data",
+      },
+    );
+  },
+
+  /**
+   * Update grading template
+   * PUT /api/v1/thesis/admin/grading-templates/:id
+   */
+  async updateGradingTemplate(
+    id: number | string,
+    formData: FormData | any,
+  ): Promise<any> {
+    return apiClient.put<any>(
+      `/api/v1/thesis/admin/grading-templates/${id}`,
+      formData,
+      {
+        "Content-Type": "multipart/form-data",
+      },
+    );
+  },
+
+  /**
+   * Delete grading template
+   * DELETE /api/v1/thesis/admin/grading-templates/:id
+   */
+  async deleteGradingTemplate(id: number | string): Promise<any> {
+    return apiClient.delete<any>(
+      `/api/v1/thesis/admin/grading-templates/${id}`,
+    );
   },
 
   /**
@@ -953,7 +1259,7 @@ export const gradingService = {
    * GET /api/v1/thesis/student/grading/my-scores
    */
   async getStudentMyScores(): Promise<any> {
-    return apiClient.get<any>('/api/v1/thesis/student/grading/my-scores');
+    return apiClient.get<any>("/api/v1/thesis/student/grading/my-scores");
   },
 
   /**
@@ -961,7 +1267,10 @@ export const gradingService = {
    * POST /api/v1/thesis/instructor/grading/supervision-comments
    */
   async submitSupervisionComment(data: any): Promise<any> {
-    return apiClient.post<any>('/api/v1/thesis/instructor/grading/supervision-comments', data);
+    return apiClient.post<any>(
+      "/api/v1/thesis/instructor/grading/supervision-comments",
+      data,
+    );
   },
 
   /**
@@ -969,7 +1278,10 @@ export const gradingService = {
    * POST /api/v1/thesis/instructor/grading/review-results
    */
   async submitReviewResult(data: any): Promise<any> {
-    return apiClient.post<any>('/api/v1/thesis/instructor/grading/review-results', data);
+    return apiClient.post<any>(
+      "/api/v1/thesis/instructor/grading/review-results",
+      data,
+    );
   },
 
   /**
@@ -977,7 +1289,10 @@ export const gradingService = {
    * POST /api/v1/thesis/instructor/defense/results
    */
   async submitDefenseResult(data: any): Promise<any> {
-    return apiClient.post<any>('/api/v1/thesis/instructor/defense/results', data);
+    return apiClient.post<any>(
+      "/api/v1/thesis/instructor/defense/results",
+      data,
+    );
   },
 
   /**
@@ -985,55 +1300,76 @@ export const gradingService = {
    * GET /api/v1/thesis/student/grading/thesis-scores/:thesisId
    */
   async getThesisScores(thesisId: number): Promise<ThesisScoresResponse> {
-    return apiClient.get<ThesisScoresResponse>(`/api/v1/thesis/student/grading/thesis-scores/${thesisId}`);
+    return apiClient.get<ThesisScoresResponse>(
+      `/api/v1/thesis/student/grading/thesis-scores/${thesisId}`,
+    );
   },
 
   /**
    * Review weekly report (Instructor only)
    * PUT /api/weekly-reports/:id/review
    */
-  async reviewWeeklyReport(id: number, data: WeeklyReportReviewRequest): Promise<WeeklyReportReviewResponse> {
-    return apiClient.put<WeeklyReportReviewResponse>(`/api/weekly-reports/${id}/review`, data);
+  async reviewWeeklyReport(
+    id: number,
+    data: WeeklyReportReviewRequest,
+  ): Promise<WeeklyReportReviewResponse> {
+    return apiClient.put<WeeklyReportReviewResponse>(
+      `/api/weekly-reports/${id}/review`,
+      data,
+    );
   },
 
   /**
    * Create a review assignment (Admin only)
    * POST /api/review-assignments
    */
-  async createReviewAssignment(data: CreateReviewAssignmentRequest): Promise<ReviewAssignment> {
-    return apiClient.post<ReviewAssignment>('/api/review-assignments', data);
+  async createReviewAssignment(
+    data: CreateReviewAssignmentRequest,
+  ): Promise<ReviewAssignment> {
+    return apiClient.post<ReviewAssignment>("/api/review-assignments", data);
   },
-
 
   /**
    * Submit a review result (Instructor only) - legacy
    * POST /api/review-results
    */
-  async submitReviewResultLegacy(data: SubmitReviewResultRequest): Promise<ReviewResult> {
-    return apiClient.post<ReviewResult>('/api/review-results', data);
+  async submitReviewResultLegacy(
+    data: SubmitReviewResultRequest,
+  ): Promise<ReviewResult> {
+    return apiClient.post<ReviewResult>("/api/review-results", data);
   },
 
   /**
    * Submit a supervision comment (Instructor only) - legacy
    * POST /api/supervision-comments
    */
-  async submitSupervisionCommentLegacy(data: SubmitSupervisionCommentRequest): Promise<SupervisionComment> {
-    return apiClient.post<SupervisionComment>('/api/supervision-comments', data);
+  async submitSupervisionCommentLegacy(
+    data: SubmitSupervisionCommentRequest,
+  ): Promise<SupervisionComment> {
+    return apiClient.post<SupervisionComment>(
+      "/api/supervision-comments",
+      data,
+    );
   },
 
   /**
    * Submit a peer evaluation (Student only)
    * POST /api/peer-evaluations
    */
-  async submitPeerEvaluation(data: SubmitPeerEvaluationRequest): Promise<PeerEvaluation> {
-    return apiClient.post<PeerEvaluation>('/api/peer-evaluations', data);
+  async submitPeerEvaluation(
+    data: SubmitPeerEvaluationRequest,
+  ): Promise<PeerEvaluation> {
+    return apiClient.post<PeerEvaluation>("/api/peer-evaluations", data);
   },
 
   /**
    * Review a weekly report (Instructor only) - legacy
    * PUT /api/weekly-reports/:id/review
    */
-  async reviewWeeklyReportLegacy(id: number, data: ReviewWeeklyReportRequest): Promise<any> {
+  async reviewWeeklyReportLegacy(
+    id: number,
+    data: ReviewWeeklyReportRequest,
+  ): Promise<any> {
     return apiClient.put(`/api/weekly-reports/${id}/review`, data);
   },
 
@@ -1045,7 +1381,6 @@ export const gradingService = {
     return apiClient.get<ThesisScores>(`/api/thesis-scores/${thesisId}`);
   },
 };
-
 
 // --- instructorService.ts ---
 
@@ -1061,12 +1396,16 @@ export const instructorService = {
     department_id?: number;
   }): Promise<any[]> {
     const queryParams = new URLSearchParams();
-    if (params?.thesis_round_id) queryParams.append('thesis_round_id', params.thesis_round_id.toString());
-    if (params?.search) queryParams.append('search', params.search);
-    if (params?.department_id) queryParams.append('department_id', params.department_id.toString());
-    
+    if (params?.thesis_round_id)
+      queryParams.append("thesis_round_id", params.thesis_round_id.toString());
+    if (params?.search) queryParams.append("search", params.search);
+    if (params?.department_id)
+      queryParams.append("department_id", params.department_id.toString());
+
     const queryString = queryParams.toString();
-    return apiClient.get<any[]>(`/api/v1/instructors${queryString ? `?${queryString}` : ''}`);
+    return apiClient.get<any[]>(
+      `/api/v1/instructors${queryString ? `?${queryString}` : ""}`,
+    );
   },
 
   /**
@@ -1114,7 +1453,10 @@ export const instructorService = {
    * Authentication required
    */
   async getActiveThesisRounds(): Promise<any[]> {
-    return apiClient.get<any[]>(`/api/v1/instructors/thesis-rounds/active`, true);
+    return apiClient.get<any[]>(
+      `/api/v1/instructors/thesis-rounds/active`,
+      true,
+    );
   },
 
   /**
@@ -1127,20 +1469,20 @@ export const instructorService = {
     params?: {
       thesis_round_id?: number;
       status?: string;
-    }
+    },
   ): Promise<any[]> {
     const queryParams = new URLSearchParams();
-    if (params?.thesis_round_id) queryParams.append('thesis_round_id', params.thesis_round_id.toString());
-    if (params?.status) queryParams.append('status', params.status);
-    
+    if (params?.thesis_round_id)
+      queryParams.append("thesis_round_id", params.thesis_round_id.toString());
+    if (params?.status) queryParams.append("status", params.status);
+
     const queryString = queryParams.toString();
     return apiClient.get<any[]>(
-      `/api/v1/instructors/${instructorId}/supervised-students${queryString ? `?${queryString}` : ''}`,
-      true
+      `/api/v1/instructors/${instructorId}/supervised-students${queryString ? `?${queryString}` : ""}`,
+      true,
     );
   },
 };
-
 
 // --- lmsService.ts ---
 
@@ -1168,7 +1510,7 @@ export const lmsService = {
    * Headers: Authorization: Bearer <token>
    */
   async getCourses(): Promise<Course[]> {
-    return apiClient.get<Course[]>('/api/courses');
+    return apiClient.get<Course[]>("/api/courses");
   },
 
   /**
@@ -1191,7 +1533,7 @@ export const lmsService = {
     instructor: string;
     credits: number;
   }): Promise<Course> {
-    return apiClient.post<Course>('/api/courses', data);
+    return apiClient.post<Course>("/api/courses", data);
   },
 
   /**
@@ -1231,7 +1573,6 @@ export const lmsService = {
   },
 };
 
-
 // --- notificationService.ts ---
 
 export interface Notification {
@@ -1255,12 +1596,13 @@ export const notificationService = {
     limit?: number;
   }): Promise<Notification[]> {
     const queryParams = new URLSearchParams();
-    if (params?.read !== undefined) queryParams.append('read', params.read.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    
+    if (params?.read !== undefined)
+      queryParams.append("read", params.read.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+
     const queryString = queryParams.toString();
     return apiClient.get<Notification[]>(
-      `/api/notifications${queryString ? `?${queryString}` : ''}`
+      `/api/notifications${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -1288,7 +1630,7 @@ export const notificationService = {
    * Headers: Authorization: Bearer <token>
    */
   async markAllAsRead(): Promise<{ message: string }> {
-    return apiClient.put<{ message: string }>('/api/notifications/read-all');
+    return apiClient.put<{ message: string }>("/api/notifications/read-all");
   },
 
   /**
@@ -1301,29 +1643,30 @@ export const notificationService = {
   },
 };
 
-
 // --- registrationService.ts ---
 import type {
   InstructorReviewRequest,
   HeadReviewRequest,
   StandardResponse,
-} from '@/types/api';
+} from "@/types/api";
 
 export const registrationService = {
   /**
    * Get registrations for instructor (Instructor only)
    * GET /api/instructor/registrations
    */
-  async getInstructorRegistrations(
-    params?: { status?: string; roundId?: number }
-  ): Promise<StandardResponse<any[]>> {
+  async getInstructorRegistrations(params?: {
+    status?: string;
+    roundId?: number;
+  }): Promise<StandardResponse<any[]>> {
     const queryParams = new URLSearchParams();
-    if (params?.status) queryParams.append('status', params.status);
-    if (params?.roundId) queryParams.append('roundId', params.roundId.toString());
-    
+    if (params?.status) queryParams.append("status", params.status);
+    if (params?.roundId)
+      queryParams.append("roundId", params.roundId.toString());
+
     const queryString = queryParams.toString();
     return apiClient.get<StandardResponse<any[]>>(
-      `/api/instructor/registrations${queryString ? `?${queryString}` : ''}`
+      `/api/instructor/registrations${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -1333,11 +1676,11 @@ export const registrationService = {
    */
   async instructorReview(
     registrationId: number,
-    data: InstructorReviewRequest
+    data: InstructorReviewRequest,
   ): Promise<StandardResponse<any>> {
     return apiClient.patch<StandardResponse<any>>(
       `/api/registrations/${registrationId}/instructor-review`,
-      data
+      data,
     );
   },
 
@@ -1345,17 +1688,21 @@ export const registrationService = {
    * Get registrations for department head (Department Head only)
    * GET /api/head/registrations
    */
-  async getHeadRegistrations(
-    params?: { roundId?: number; instructorStatus?: string; headStatus?: string }
-  ): Promise<StandardResponse<any[]>> {
+  async getHeadRegistrations(params?: {
+    roundId?: number;
+    instructorStatus?: string;
+    headStatus?: string;
+  }): Promise<StandardResponse<any[]>> {
     const queryParams = new URLSearchParams();
-    if (params?.roundId) queryParams.append('roundId', params.roundId.toString());
-    if (params?.instructorStatus) queryParams.append('instructorStatus', params.instructorStatus);
-    if (params?.headStatus) queryParams.append('headStatus', params.headStatus);
-    
+    if (params?.roundId)
+      queryParams.append("roundId", params.roundId.toString());
+    if (params?.instructorStatus)
+      queryParams.append("instructorStatus", params.instructorStatus);
+    if (params?.headStatus) queryParams.append("headStatus", params.headStatus);
+
     const queryString = queryParams.toString();
     return apiClient.get<StandardResponse<any[]>>(
-      `/api/head/registrations${queryString ? `?${queryString}` : ''}`
+      `/api/head/registrations${queryString ? `?${queryString}` : ""}`,
     );
   },
 
@@ -1365,15 +1712,14 @@ export const registrationService = {
    */
   async headReview(
     registrationId: number,
-    data: HeadReviewRequest
+    data: HeadReviewRequest,
   ): Promise<StandardResponse<any>> {
     return apiClient.patch<StandardResponse<any>>(
       `/api/registrations/${registrationId}/head-review`,
-      data
+      data,
     );
   },
 };
-
 
 // --- reportService.ts ---
 import type {
@@ -1390,7 +1736,7 @@ import type {
   SubmitWeeklyReportRequest,
   WeeklyReportFeedbackRequest,
   StandardResponse,
-} from '@/types/api';
+} from "@/types/api";
 
 export const reportService = {
   /**
@@ -1398,15 +1744,21 @@ export const reportService = {
    * POST /api/thesis-tasks
    */
   async createThesisTask(data: CreateThesisTaskRequest): Promise<ThesisTask> {
-    return apiClient.post<ThesisTask>('/api/v1/thesis/student/tasks', data);
+    return apiClient.post<ThesisTask>("/api/v1/thesis/student/tasks", data);
   },
 
   /**
    * Update a thesis task
    * PUT /api/thesis-tasks/:id
    */
-  async updateThesisTask(id: number, data: UpdateThesisTaskRequest): Promise<ThesisTask> {
-    return apiClient.put<ThesisTask>(`/api/v1/thesis/student/tasks/${id}`, data);
+  async updateThesisTask(
+    id: number,
+    data: UpdateThesisTaskRequest,
+  ): Promise<ThesisTask> {
+    return apiClient.put<ThesisTask>(
+      `/api/v1/thesis/student/tasks/${id}`,
+      data,
+    );
   },
 
   /**
@@ -1414,7 +1766,9 @@ export const reportService = {
    * GET /api/thesis-tasks
    */
   async getThesisTasks(thesisId: number): Promise<ThesisTask[]> {
-    return apiClient.get<ThesisTask[]>(`/api/v1/thesis/student/tasks/${thesisId}`);
+    return apiClient.get<ThesisTask[]>(
+      `/api/v1/thesis/student/tasks/${thesisId}`,
+    );
   },
 
   /**
@@ -1422,7 +1776,9 @@ export const reportService = {
    * GET /api/v1/thesis/student/tasks/lists/:thesisId
    */
   async getKanbanLists(thesisId: number): Promise<any[]> {
-    return apiClient.get<any[]>(`/api/v1/thesis/student/tasks/lists/${thesisId}`);
+    return apiClient.get<any[]>(
+      `/api/v1/thesis/student/tasks/lists/${thesisId}`,
+    );
   },
 
   /**
@@ -1432,14 +1788,22 @@ export const reportService = {
   async submitReviewResult(data: any): Promise<any> {
     if (data.grading_file || data.gradingFile) {
       const formData = new FormData();
-      Object.keys(data).forEach(key => {
+      Object.keys(data).forEach((key) => {
         if (data[key] !== null && data[key] !== undefined) {
           formData.append(key, data[key]);
         }
       });
-      return apiClient.post<any>('/api/v1/thesis/instructor/grading/review-results', formData, true, { 'Content-Type': 'multipart/form-data' });
+      return apiClient.post<any>(
+        "/api/v1/thesis/instructor/grading/review-results",
+        formData,
+        true,
+        { "Content-Type": "multipart/form-data" },
+      );
     }
-    return apiClient.post<any>('/api/v1/thesis/instructor/grading/review-results', data);
+    return apiClient.post<any>(
+      "/api/v1/thesis/instructor/grading/review-results",
+      data,
+    );
   },
 
   /**
@@ -1449,38 +1813,61 @@ export const reportService = {
   async submitSupervisionComment(data: any): Promise<any> {
     if (data.grading_file || data.gradingFile) {
       const formData = new FormData();
-      Object.keys(data).forEach(key => {
+      Object.keys(data).forEach((key) => {
         if (data[key] !== null && data[key] !== undefined) {
           formData.append(key, data[key]);
         }
       });
-      return apiClient.post<any>('/api/v1/thesis/instructor/grading/supervision-comments', formData, true, { 'Content-Type': 'multipart/form-data' });
+      return apiClient.post<any>(
+        "/api/v1/thesis/instructor/grading/supervision-comments",
+        formData,
+        true,
+        { "Content-Type": "multipart/form-data" },
+      );
     }
-    return apiClient.post<any>('/api/v1/thesis/instructor/grading/supervision-comments', data);
+    return apiClient.post<any>(
+      "/api/v1/thesis/instructor/grading/supervision-comments",
+      data,
+    );
   },
 
   /**
    * Create a Kanban list
    * POST /api/v1/thesis/student/tasks/lists
    */
-  async createKanbanList(data: { thesis_id: number; name: string }): Promise<any> {
-    return apiClient.post<any>('/api/v1/thesis/student/tasks/lists', data);
+  async createKanbanList(data: {
+    thesis_id: number;
+    name: string;
+  }): Promise<any> {
+    return apiClient.post<any>("/api/v1/thesis/student/tasks/lists", data);
   },
 
   /**
    * Create a weekly report (Student only)
    * POST /api/weekly-reports
    */
-  async createWeeklyReport(thesisId: number, data: CreateWeeklyReportRequest): Promise<WeeklyReport> {
-    return apiClient.post<WeeklyReport>(`/api/v1/thesis/student/reports/weekly/${thesisId}`, data);
+  async createWeeklyReport(
+    thesisId: number,
+    data: CreateWeeklyReportRequest,
+  ): Promise<WeeklyReport> {
+    return apiClient.post<WeeklyReport>(
+      `/api/v1/thesis/student/reports/weekly/${thesisId}`,
+      data,
+    );
   },
 
   /**
    * Update a weekly report
    * PUT /api/weekly-reports/:id
    */
-  async updateWeeklyReport(id: number, data: UpdateWeeklyReportRequest): Promise<WeeklyReport> {
-    return apiClient.put<WeeklyReport>(`/api/v1/thesis/student/reports/weekly/${id}`, data); // Assuming id is reportId
+  async updateWeeklyReport(
+    id: number,
+    data: UpdateWeeklyReportRequest,
+  ): Promise<WeeklyReport> {
+    return apiClient.put<WeeklyReport>(
+      `/api/v1/thesis/student/reports/weekly/${id}`,
+      data,
+    ); // Assuming id is reportId
   },
 
   /**
@@ -1489,9 +1876,13 @@ export const reportService = {
    */
   async getWeeklyReports(thesisId?: number): Promise<WeeklyReport[]> {
     if (thesisId) {
-      return apiClient.get<WeeklyReport[]>(`/api/v1/thesis/student/reports/weekly/${thesisId}`);
+      return apiClient.get<WeeklyReport[]>(
+        `/api/v1/thesis/student/reports/weekly/${thesisId}`,
+      );
     } else {
-      return apiClient.get<WeeklyReport[]>(`/api/v1/thesis/instructor/reports/weekly`);
+      return apiClient.get<WeeklyReport[]>(
+        `/api/v1/thesis/instructor/reports/weekly`,
+      );
     }
   },
 
@@ -1499,15 +1890,23 @@ export const reportService = {
    * Add individual contribution to weekly report (Student only)
    * POST /api/weekly-report-contributions
    */
-  async addContribution(data: AddContributionRequest): Promise<WeeklyReportContribution> {
-    return apiClient.post<WeeklyReportContribution>('/api/weekly-report-contributions', data);
+  async addContribution(
+    data: AddContributionRequest,
+  ): Promise<WeeklyReportContribution> {
+    return apiClient.post<WeeklyReportContribution>(
+      "/api/weekly-report-contributions",
+      data,
+    );
   },
 
   /**
    * Submit final report (Student only)
    * PUT /api/theses/:id/submit-final-report
    */
-  async submitFinalReport(id: number, data: SubmitFinalReportRequest): Promise<any> {
+  async submitFinalReport(
+    id: number,
+    data: SubmitFinalReportRequest,
+  ): Promise<any> {
     return apiClient.put(`/api/theses/${id}/submit-final-report`, data);
   },
 
@@ -1516,17 +1915,22 @@ export const reportService = {
    * GET /api/reports/thesis-progress/:thesisId
    */
   async getThesisProgress(thesisId: number): Promise<ThesisProgress> {
-    return apiClient.get<ThesisProgress>(`/api/reports/thesis-progress/${thesisId}`);
+    return apiClient.get<ThesisProgress>(
+      `/api/reports/thesis-progress/${thesisId}`,
+    );
   },
 
   /**
    * Submit weekly report for thesis (Student only)
    * POST /api/theses/:thesisId/weekly-reports
    */
-  async submitWeeklyReport(thesisId: number, data: SubmitWeeklyReportRequest): Promise<StandardResponse<WeeklyReport>> {
+  async submitWeeklyReport(
+    thesisId: number,
+    data: SubmitWeeklyReportRequest,
+  ): Promise<StandardResponse<WeeklyReport>> {
     return apiClient.post<StandardResponse<WeeklyReport>>(
       `/api/v1/thesis/student/reports/weekly/${thesisId}`,
-      data
+      data,
     );
   },
 
@@ -1536,17 +1940,22 @@ export const reportService = {
    */
   async uploadAttachment(file: File): Promise<{ url: string }> {
     const formData = new FormData();
-    formData.append('attachmentFile', file);
-    return apiClient.post<{ url: string }>('/api/v1/thesis/student/reports/upload', formData);
+    formData.append("attachmentFile", file);
+    return apiClient.post<{ url: string }>(
+      "/api/v1/thesis/student/reports/upload",
+      formData,
+    );
   },
 
   /**
    * Get weekly reports for thesis (Student member or Instructor supervisor)
    * GET /api/theses/:thesisId/weekly-reports
    */
-  async getThesisWeeklyReports(thesisId: number): Promise<StandardResponse<WeeklyReport[]>> {
+  async getThesisWeeklyReports(
+    thesisId: number,
+  ): Promise<StandardResponse<WeeklyReport[]>> {
     return apiClient.get<StandardResponse<WeeklyReport[]>>(
-      `/api/v1/thesis/student/reports/weekly/${thesisId}`
+      `/api/v1/thesis/student/reports/weekly/${thesisId}`,
     );
   },
 
@@ -1554,9 +1963,11 @@ export const reportService = {
    * Get weekly reports for thesis (Instructor supervisor)
    * GET /api/v1/thesis/instructor/reports/weekly/:thesisId
    */
-  async getThesisWeeklyReportsForInstructor(thesisId: number): Promise<StandardResponse<WeeklyReport[]>> {
+  async getThesisWeeklyReportsForInstructor(
+    thesisId: number,
+  ): Promise<StandardResponse<WeeklyReport[]>> {
     return apiClient.get<StandardResponse<WeeklyReport[]>>(
-      `/api/v1/thesis/instructor/reports/weekly/${thesisId}`
+      `/api/v1/thesis/instructor/reports/weekly/${thesisId}`,
     );
   },
 
@@ -1566,11 +1977,11 @@ export const reportService = {
    */
   async provideWeeklyReportFeedback(
     reportId: number,
-    data: WeeklyReportFeedbackRequest
+    data: WeeklyReportFeedbackRequest,
   ): Promise<StandardResponse<WeeklyReport>> {
     return apiClient.put<StandardResponse<WeeklyReport>>(
       `/api/v1/thesis/instructor/reports/weekly/${reportId}/feedback`,
-      data
+      data,
     );
   },
 
@@ -1578,20 +1989,22 @@ export const reportService = {
    * Get individual thesis reports for a student
    * GET /api/reports/individual-thesis-reports
    */
-  async getIndividualThesisReports(studentId: number): Promise<StandardResponse<any[]>> {
+  async getIndividualThesisReports(
+    studentId: number,
+  ): Promise<StandardResponse<any[]>> {
     return apiClient.get<StandardResponse<any[]>>(
-      `/api/reports/individual-thesis-reports?student_id=${studentId}`
+      `/api/reports/individual-thesis-reports?student_id=${studentId}`,
     );
   },
 };
 
-
 // --- socketService.ts ---
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from "socket.io-client";
 
 // Socket.IO kết nối TRỰC TIẾP đến ChatService (bypass API Gateway)
 // Vì Gateway không proxy WebSocket
-const SOCKET_URL = import.meta.env.VITE_CHAT_SOCKET_URL || 'http://localhost:8006';
+const SOCKET_URL =
+  import.meta.env.VITE_CHAT_SOCKET_URL || "http://localhost:8006";
 
 let socket: Socket | null = null;
 
@@ -1607,22 +2020,22 @@ export function connectSocket(token: string): Socket {
   if (socket?.connected) return socket;
 
   socket = io(SOCKET_URL, {
-    auth: { token },          // ChatService socket middleware đọc token từ đây
-    transports: ['websocket', 'polling'],
+    auth: { token }, // ChatService socket middleware đọc token từ đây
+    transports: ["websocket", "polling"],
     reconnectionAttempts: 5,
     reconnectionDelay: 2000,
   });
 
-  socket.on('connect', () => {
-    console.log('[Socket] ✅ Kết nối thành công, socketId:', socket?.id);
+  socket.on("connect", () => {
+    console.log("[Socket] ✅ Kết nối thành công, socketId:", socket?.id);
   });
 
-  socket.on('connect_error', (err) => {
-    console.error('[Socket] ❌ Lỗi kết nối:', err.message);
+  socket.on("connect_error", (err) => {
+    console.error("[Socket] ❌ Lỗi kết nối:", err.message);
   });
 
-  socket.on('disconnect', (reason) => {
-    console.warn('[Socket] ⚠️ Mất kết nối:', reason);
+  socket.on("disconnect", (reason) => {
+    console.warn("[Socket] ⚠️ Mất kết nối:", reason);
   });
 
   return socket;
@@ -1638,29 +2051,77 @@ export function disconnectSocket(): void {
 
 /** Tham gia phòng chat của 1 conversation */
 export function joinConversation(conversationId: number): void {
-  socket?.emit('joinConversation', { conversationId });
+  socket?.emit("joinConversation", { conversationId });
 }
 
 /** Rời khỏi phòng chat của 1 conversation */
 export function leaveConversation(conversationId: number): void {
-  socket?.emit('leaveConversation', { conversationId });
+  socket?.emit("leaveConversation", { conversationId });
 }
 
 /** Gửi tin nhắn qua socket */
-export function sendSocketMessage(conversationId: number, content: string): void {
-  socket?.emit('sendMessage', { conversationId, content });
+export function sendSocketMessage(
+  conversationId: number,
+  content: string,
+  options?: {
+    parentMessageId?: number;
+    attachments?: Array<{
+      fileName: string;
+      filePath: string;
+      fileType?: string;
+      fileSize?: number;
+      thumbnailPath?: string;
+    }>;
+    mentionedUserIds?: number[];
+  },
+): void {
+  socket?.emit("sendMessage", {
+    conversationId,
+    content,
+    parentMessageId: options?.parentMessageId,
+    attachments: options?.attachments,
+    mentionedUserIds: options?.mentionedUserIds,
+  });
+}
+
+/** Chỉnh sửa tin nhắn qua socket */
+export function editSocketMessage(messageId: number, content: string): void {
+  socket?.emit("editMessage", { messageId, content });
+}
+
+/** Xóa/thu hồi tin nhắn qua socket */
+export function deleteSocketMessage(messageId: number): void {
+  socket?.emit("deleteMessage", { messageId });
+}
+
+/** Thêm cảm xúc (reaction) cho tin nhắn qua socket */
+export function addSocketReaction(
+  messageId: number,
+  reactionType: string,
+  reactionIcon?: string,
+): void {
+  socket?.emit("addReaction", { messageId, reactionType, reactionIcon });
+}
+
+/** Xóa cảm xúc qua socket */
+export function removeSocketReaction(messageId: number): void {
+  socket?.emit("removeReaction", { messageId });
+}
+
+/** Đánh dấu đã đọc hội thoại qua socket */
+export function markSocketRead(conversationId: number): void {
+  socket?.emit("markRead", { conversationId });
 }
 
 /** Báo đang gõ phím */
 export function startTyping(conversationId: number): void {
-  socket?.emit('startTyping', { conversationId });
+  socket?.emit("startTyping", { conversationId });
 }
 
 /** Báo ngừng gõ phím */
 export function stopTyping(conversationId: number): void {
-  socket?.emit('stopTyping', { conversationId });
+  socket?.emit("stopTyping", { conversationId });
 }
-
 
 // --- studentService.ts ---
 import type {
@@ -1669,7 +2130,7 @@ import type {
   StudentClass,
   StudentClassDetail,
   GetClassesParams,
-} from '@/types/api';
+} from "@/types/api";
 
 export const studentService = {
   /**
@@ -1677,22 +2138,24 @@ export const studentService = {
    * GET /api/students/instructors
    * Authentication required
    */
-  async getInstructors(params?: GetInstructorsParams): Promise<StudentInstructor[]> {
+  async getInstructors(
+    params?: GetInstructorsParams,
+  ): Promise<StudentInstructor[]> {
     const queryParams = new URLSearchParams();
-    
+
     if (params?.thesis_round_id) {
-      queryParams.append('thesis_round_id', params.thesis_round_id.toString());
+      queryParams.append("thesis_round_id", params.thesis_round_id.toString());
     }
     if (params?.department_id) {
-      queryParams.append('department_id', params.department_id.toString());
+      queryParams.append("department_id", params.department_id.toString());
     }
     if (params?.search) {
-      queryParams.append('search', params.search);
+      queryParams.append("search", params.search);
     }
-    
+
     const queryString = queryParams.toString();
-    const endpoint = `/api/students/instructors${queryString ? `?${queryString}` : ''}`;
-    
+    const endpoint = `/api/students/instructors${queryString ? `?${queryString}` : ""}`;
+
     return apiClient.get<StudentInstructor[]>(endpoint);
   },
 
@@ -1702,17 +2165,17 @@ export const studentService = {
    */
   async getClasses(params?: GetClassesParams): Promise<StudentClass[]> {
     const queryParams = new URLSearchParams();
-    
+
     if (params?.department_id) {
-      queryParams.append('department_id', params.department_id.toString());
+      queryParams.append("department_id", params.department_id.toString());
     }
     if (params?.major_id) {
-      queryParams.append('major_id', params.major_id.toString());
+      queryParams.append("major_id", params.major_id.toString());
     }
-    
+
     const queryString = queryParams.toString();
-    const endpoint = `/api/students/classes${queryString ? `?${queryString}` : ''}`;
-    
+    const endpoint = `/api/students/classes${queryString ? `?${queryString}` : ""}`;
+
     const response = await apiClient.get<any>(endpoint);
     return response.data || response;
   },
@@ -1727,14 +2190,13 @@ export const studentService = {
   },
 };
 
-
 // --- studentThesisService.ts ---
 import type {
   ThesisRound,
   ProposedTopic,
   TopicRegistration,
   StandardResponse,
-} from '@/types/api';
+} from "@/types/api";
 
 export const studentThesisService = {
   /**
@@ -1742,7 +2204,9 @@ export const studentThesisService = {
    * GET /api/thesis/thesis-rounds
    */
   async getAllThesisRounds(): Promise<StandardResponse<ThesisRound[]>> {
-    return apiClient.get<StandardResponse<ThesisRound[]>>('/api/thesis/thesis-rounds');
+    return apiClient.get<StandardResponse<ThesisRound[]>>(
+      "/api/thesis/thesis-rounds",
+    );
   },
 
   /**
@@ -1750,7 +2214,9 @@ export const studentThesisService = {
    * GET /api/thesis/available-topics
    */
   async getAvailableTopics(): Promise<StandardResponse<ProposedTopic[]>> {
-    return apiClient.get<StandardResponse<ProposedTopic[]>>('/api/thesis/available-topics');
+    return apiClient.get<StandardResponse<ProposedTopic[]>>(
+      "/api/thesis/available-topics",
+    );
   },
 
   /**
@@ -1758,10 +2224,11 @@ export const studentThesisService = {
    * GET /api/thesis/my-registrations
    */
   async getMyRegistrations(): Promise<StandardResponse<TopicRegistration[]>> {
-    return apiClient.get<StandardResponse<TopicRegistration[]>>('/api/thesis/my-registrations');
+    return apiClient.get<StandardResponse<TopicRegistration[]>>(
+      "/api/thesis/my-registrations",
+    );
   },
 };
-
 
 // --- thesisGroupsService.ts ---
 import type {
@@ -1769,7 +2236,7 @@ import type {
   ThesisGroup,
   CreateGroupInvitationRequest,
   GroupInvitation,
-} from '@/types/api';
+} from "@/types/api";
 
 export const thesisGroupsService = {
   /**
@@ -1777,8 +2244,10 @@ export const thesisGroupsService = {
    * POST /api/thesis-groups
    * Request body includes: group_name, thesis_round_id, group_type, min_members, max_members, student_id
    */
-  async createThesisGroup(data: CreateThesisGroupRequest): Promise<ThesisGroup> {
-    return apiClient.post<ThesisGroup>('/api/thesis-groups', data);
+  async createThesisGroup(
+    data: CreateThesisGroupRequest,
+  ): Promise<ThesisGroup> {
+    return apiClient.post<ThesisGroup>("/api/thesis-groups", data);
   },
 
   /**
@@ -1786,12 +2255,18 @@ export const thesisGroupsService = {
    * GET /api/thesis-groups
    * Query params: student_id (optional), thesis_round_id (optional)
    */
-  async getThesisGroups(studentId?: number, thesisRoundId?: number): Promise<ThesisGroup[]> {
+  async getThesisGroups(
+    studentId?: number,
+    thesisRoundId?: number,
+  ): Promise<ThesisGroup[]> {
     const params = new URLSearchParams();
-    if (studentId) params.append('student_id', studentId.toString());
-    if (thesisRoundId) params.append('thesis_round_id', thesisRoundId.toString());
+    if (studentId) params.append("student_id", studentId.toString());
+    if (thesisRoundId)
+      params.append("thesis_round_id", thesisRoundId.toString());
     const queryParams = params.toString();
-    return apiClient.get<ThesisGroup[]>(`/api/thesis-groups${queryParams ? '?' + queryParams : ''}`);
+    return apiClient.get<ThesisGroup[]>(
+      `/api/thesis-groups${queryParams ? "?" + queryParams : ""}`,
+    );
   },
 
   /**
@@ -1806,7 +2281,10 @@ export const thesisGroupsService = {
    * Update thesis group
    * PUT /api/thesis-groups/:id
    */
-  async updateThesisGroup(id: string | number, data: Partial<CreateThesisGroupRequest> | any): Promise<ThesisGroup> {
+  async updateThesisGroup(
+    id: string | number,
+    data: Partial<CreateThesisGroupRequest> | any,
+  ): Promise<ThesisGroup> {
     return apiClient.put<ThesisGroup>(`/api/thesis-groups/${id}`, data);
   },
 
@@ -1823,8 +2301,13 @@ export const thesisGroupsService = {
    * POST /api/thesis-groups/invitations
    * Request body includes: thesis_group_id, invited_student_id, invitation_message, student_id
    */
-  async createGroupInvitation(data: CreateGroupInvitationRequest): Promise<GroupInvitation> {
-    return apiClient.post<GroupInvitation>('/api/thesis-groups/invitations', data);
+  async createGroupInvitation(
+    data: CreateGroupInvitationRequest,
+  ): Promise<GroupInvitation> {
+    return apiClient.post<GroupInvitation>(
+      "/api/thesis-groups/invitations",
+      data,
+    );
   },
 
   /**
@@ -1832,8 +2315,14 @@ export const thesisGroupsService = {
    * PUT /api/thesis-groups/invitations/:id/accept
    * Request body includes: student_id
    */
-  async acceptInvitation(id: number, studentId: number): Promise<GroupInvitation> {
-    return apiClient.put<GroupInvitation>(`/api/thesis-groups/invitations/${id}/accept`, { student_id: studentId });
+  async acceptInvitation(
+    id: number,
+    studentId: number,
+  ): Promise<GroupInvitation> {
+    return apiClient.put<GroupInvitation>(
+      `/api/thesis-groups/invitations/${id}/accept`,
+      { student_id: studentId },
+    );
   },
 
   /**
@@ -1841,8 +2330,14 @@ export const thesisGroupsService = {
    * PUT /api/thesis-groups/invitations/:id/reject
    * Request body includes: student_id
    */
-  async rejectInvitation(id: number, studentId: number): Promise<GroupInvitation> {
-    return apiClient.put<GroupInvitation>(`/api/thesis-groups/invitations/${id}/reject`, { student_id: studentId });
+  async rejectInvitation(
+    id: number,
+    studentId: number,
+  ): Promise<GroupInvitation> {
+    return apiClient.put<GroupInvitation>(
+      `/api/thesis-groups/invitations/${id}/reject`,
+      { student_id: studentId },
+    );
   },
 
   /**
@@ -1851,7 +2346,9 @@ export const thesisGroupsService = {
    * Query param: student_id (required)
    */
   async getInvitations(studentId: number): Promise<GroupInvitation[]> {
-    return apiClient.get<GroupInvitation[]>(`/api/thesis-groups/invitations?student_id=${studentId}`);
+    return apiClient.get<GroupInvitation[]>(
+      `/api/thesis-groups/invitations?student_id=${studentId}`,
+    );
   },
 
   /**
@@ -1860,9 +2357,11 @@ export const thesisGroupsService = {
    * Request body includes: student_id, thesis_group_id
    */
   async leaveGroup(studentId: number, thesisGroupId: number): Promise<any> {
-    return apiClient.post<any>('/api/thesis-groups/leave', { student_id: studentId, thesis_group_id: thesisGroupId });
+    return apiClient.post<any>("/api/thesis-groups/leave", {
+      student_id: studentId,
+      thesis_group_id: thesisGroupId,
+    });
   },
-
 
   /**
    * Lock thesis group (Student only)
@@ -1876,8 +2375,15 @@ export const thesisGroupsService = {
    * Dissolve thesis group (Student only)
    * PUT /api/thesis-groups/:id/dissolve
    */
-  async dissolveThesisGroup(id: number, studentId: number, dissolutionReason: string = ''): Promise<any> {
-    return apiClient.put<any>(`/api/thesis-groups/${id}/dissolve`, { student_id: studentId, dissolution_reason: dissolutionReason });
+  async dissolveThesisGroup(
+    id: number,
+    studentId: number,
+    dissolutionReason: string = "",
+  ): Promise<any> {
+    return apiClient.put<any>(`/api/thesis-groups/${id}/dissolve`, {
+      student_id: studentId,
+      dissolution_reason: dissolutionReason,
+    });
   },
 
   /**
@@ -1893,10 +2399,11 @@ export const thesisGroupsService = {
    * DELETE /api/thesis-groups/:id/members/:memberId
    */
   async removeGroupMember(id: number, memberId: number): Promise<any> {
-    return apiClient.delete<any>(`/api/thesis-groups/${id}/members/${memberId}`);
+    return apiClient.delete<any>(
+      `/api/thesis-groups/${id}/members/${memberId}`,
+    );
   },
 };
-
 
 // --- thesisRoundsService.ts ---
 import type {
@@ -1912,7 +2419,7 @@ import type {
   GuidanceProcessResponse,
   UpdateThesisRoundStatusRequest,
   StandardResponse,
-} from '@/types/api';
+} from "@/types/api";
 
 export const thesisRoundsService = {
   // ==========================================
@@ -1923,8 +2430,10 @@ export const thesisRoundsService = {
    * Create a new thesis round
    * POST /api/admin/thesis-rounds
    */
-  async createThesisRound(data: CreateThesisRoundRequest): Promise<ThesisRound> {
-    return apiClient.post<ThesisRound>('/api/admin/thesis-rounds', data);
+  async createThesisRound(
+    data: CreateThesisRoundRequest,
+  ): Promise<ThesisRound> {
+    return apiClient.post<ThesisRound>("/api/admin/thesis-rounds", data);
   },
 
   /**
@@ -1932,7 +2441,7 @@ export const thesisRoundsService = {
    * GET /api/admin/thesis-rounds
    */
   async getThesisRounds(): Promise<ThesisRound[]> {
-    return apiClient.get<ThesisRound[]>('/api/admin/thesis-rounds');
+    return apiClient.get<ThesisRound[]>("/api/admin/thesis-rounds");
   },
 
   /**
@@ -1940,7 +2449,7 @@ export const thesisRoundsService = {
    * GET /api/admin/thesis-rounds/active
    */
   async getActiveThesisRoundsForAdmin(): Promise<ThesisRound[]> {
-    return apiClient.get<ThesisRound[]>('/api/admin/thesis-rounds/active');
+    return apiClient.get<ThesisRound[]>("/api/admin/thesis-rounds/active");
   },
 
   /**
@@ -1956,7 +2465,9 @@ export const thesisRoundsService = {
    * PUT /api/admin/thesis-rounds/:id/activate
    */
   async activateThesisRound(id: number): Promise<ThesisRound> {
-    return apiClient.put<ThesisRound>(`/api/admin/thesis-rounds/${id}/activate`);
+    return apiClient.put<ThesisRound>(
+      `/api/admin/thesis-rounds/${id}/activate`,
+    );
   },
 
   /**
@@ -1965,11 +2476,11 @@ export const thesisRoundsService = {
    */
   async updateThesisRoundStatus(
     roundId: number,
-    data: UpdateThesisRoundStatusRequest
+    data: UpdateThesisRoundStatusRequest,
   ): Promise<StandardResponse<ThesisRound>> {
     return apiClient.put<StandardResponse<ThesisRound>>(
       `/api/admin/thesis-rounds/${roundId}/status`,
-      data
+      data,
     );
   },
 
@@ -1978,7 +2489,9 @@ export const thesisRoundsService = {
    * POST /api/admin/thesis-rounds/auto-update-status
    */
   async autoUpdateStatus(): Promise<{ updated: number }> {
-    return apiClient.post<{ updated: number }>('/api/admin/thesis-rounds/auto-update-status');
+    return apiClient.post<{ updated: number }>(
+      "/api/admin/thesis-rounds/auto-update-status",
+    );
   },
 
   /**
@@ -1987,20 +2500,22 @@ export const thesisRoundsService = {
    */
   async assignInstructors(
     id: number,
-    data: { instructorIds: number[]; supervisionQuota: number }
+    data: { instructorIds: number[]; supervisionQuota: number },
   ): Promise<any> {
     return apiClient.post<any>(
       `/api/admin/thesis-rounds/${id}/instructors`,
-      data
+      data,
     );
   },
 
   /**
    * Get instructor assignments for a thesis round
    */
-  async getInstructorAssignments(id: number): Promise<StandardResponse<InstructorAssignment[]>> {
+  async getInstructorAssignments(
+    id: number,
+  ): Promise<StandardResponse<InstructorAssignment[]>> {
     return apiClient.get<StandardResponse<InstructorAssignment[]>>(
-      `/api/v1/thesis/thesis-rounds/${id}/instructors`
+      `/api/v1/thesis/thesis-rounds/${id}/instructors`,
     );
   },
 
@@ -2010,11 +2525,11 @@ export const thesisRoundsService = {
    */
   async assignClasses(
     id: number,
-    data: AssignClassesRequest
+    data: AssignClassesRequest,
   ): Promise<AssignedClass[]> {
     return apiClient.post<AssignedClass[]>(
       `/api/admin/thesis-rounds/${id}/assign-classes`,
-      data
+      data,
     );
   },
 
@@ -2024,23 +2539,25 @@ export const thesisRoundsService = {
    */
   async addGuidanceProcess(
     id: number,
-    data: AddGuidanceProcessRequest
+    data: AddGuidanceProcessRequest,
   ): Promise<GuidanceProcessResponse[]> {
     return apiClient.post<GuidanceProcessResponse[]>(
       `/api/admin/thesis-rounds/${id}/guidance-process`,
-      data
+      data,
     );
   },
 
   // ==========================================
   // ALIASES FOR COMPATIBILITY WITH HEAD USAGE
   // ==========================================
-  async createThesisRoundForHead(data: CreateThesisRoundRequest): Promise<ThesisRound> {
+  async createThesisRoundForHead(
+    data: CreateThesisRoundRequest,
+  ): Promise<ThesisRound> {
     return this.createThesisRound(data);
   },
   async assignInstructorsToRound(
     roundId: number,
-    data: { instructorIds: number[]; supervisionQuota: number }
+    data: { instructorIds: number[]; supervisionQuota: number },
   ): Promise<StandardResponse<any>> {
     const result = await this.assignInstructors(roundId, data);
     return { data: result };
@@ -2049,22 +2566,32 @@ export const thesisRoundsService = {
   async getThesisRoundsForHead(): Promise<ThesisRound[]> {
     return this.getThesisRounds();
   },
-  async getActiveThesisRoundsForHead(): Promise<StandardResponse<ThesisRound[]>> {
+  async getActiveThesisRoundsForHead(): Promise<
+    StandardResponse<ThesisRound[]>
+  > {
     const rounds = await this.getActiveThesisRoundsForAdmin();
     return { data: rounds };
   },
-  async getThesisRoundByIdForHead(id: number): Promise<StandardResponse<ThesisRound>> {
+  async getThesisRoundByIdForHead(
+    id: number,
+  ): Promise<StandardResponse<ThesisRound>> {
     const round = await this.getThesisRoundById(id);
     return { data: round };
   },
   async activateThesisRoundForHead(id: number): Promise<ThesisRound> {
     return this.activateThesisRound(id);
   },
-  async assignClassesForHead(id: number, data: AssignClassesRequest): Promise<StandardResponse<ThesisRoundClass[]>> {
+  async assignClassesForHead(
+    id: number,
+    data: AssignClassesRequest,
+  ): Promise<StandardResponse<ThesisRoundClass[]>> {
     const classes = await this.assignClasses(id, data);
     return { data: classes as any };
   },
-  async addGuidanceProcessForHead(id: number, data: AddGuidanceProcessRequest): Promise<StandardResponse<GuidanceProcess[]>> {
+  async addGuidanceProcessForHead(
+    id: number,
+    data: AddGuidanceProcessRequest,
+  ): Promise<StandardResponse<GuidanceProcess[]>> {
     const process = await this.addGuidanceProcess(id, data);
     return { data: process as any };
   },
@@ -2072,7 +2599,9 @@ export const thesisRoundsService = {
     return apiClient.put<ThesisRound>(`/api/admin/thesis-rounds/${id}`, data);
   },
   async startThesisRoundForHead(id: number): Promise<ThesisRound> {
-    const res = await this.updateThesisRoundStatus(id, { status: 'Ongoing' } as any);
+    const res = await this.updateThesisRoundStatus(id, {
+      status: "Ongoing",
+    } as any);
     return res.data as any;
   },
 
@@ -2084,14 +2613,14 @@ export const thesisRoundsService = {
    * Get active thesis rounds for instructor
    */
   async getThesisRoundsForInstructor(): Promise<ThesisRound[]> {
-    return apiClient.get<ThesisRound[]>('/api/v1/thesis/thesis-rounds/active');
+    return apiClient.get<ThesisRound[]>("/api/v1/thesis/thesis-rounds/active");
   },
 
   /**
    * Get active thesis rounds (for instructor grading)
    */
   async getActiveThesisRounds(): Promise<ThesisRound[]> {
-    return apiClient.get<ThesisRound[]>('/api/v1/thesis/thesis-rounds/active');
+    return apiClient.get<ThesisRound[]>("/api/v1/thesis/thesis-rounds/active");
   },
 
   // ==========================================
@@ -2103,18 +2632,18 @@ export const thesisRoundsService = {
    */
   async getThesisRoundsForStudent(): Promise<StandardResponse<ThesisRound[]>> {
     try {
-      const rounds = await apiClient.get<ThesisRound[]>('/api/v1/thesis/thesis-rounds/active');
-      return { success: true, data: rounds, message: 'Success' } as any;
+      const rounds = await apiClient.get<ThesisRound[]>(
+        "/api/v1/thesis/thesis-rounds/active",
+      );
+      return { success: true, data: rounds, message: "Success" } as any;
     } catch (error: any) {
-      console.error('Error fetching student thesis rounds:', error);
+      console.error("Error fetching student thesis rounds:", error);
       return { success: false, data: [], message: error.message } as any;
     }
   },
 };
 
 export const thesisRoundService = thesisRoundsService;
-
-
 
 // --- thesisService.ts ---
 
@@ -2160,6 +2689,22 @@ export interface ThesisTask {
 }
 
 export const thesisService = {
+  /**
+   * Get current student's thesis / topic registration
+   * GET /api/thesis/my-registrations
+   */
+  async getMyThesis(): Promise<any> {
+    try {
+      const res = await apiClient.get<any>("/api/thesis/my-registrations");
+      if (Array.isArray(res) && res.length > 0) return res[0];
+      if (res?.data && Array.isArray(res.data) && res.data.length > 0)
+        return res.data[0];
+      return res?.data || res;
+    } catch {
+      return null;
+    }
+  },
+
   // Legacy Routes for /api/thesis
   /**
    * Get all theses
@@ -2167,7 +2712,7 @@ export const thesisService = {
    * Headers: Authorization: Bearer <token>
    */
   async getTheses(): Promise<Thesis[]> {
-    return apiClient.get<Thesis[]>('/api/thesis');
+    return apiClient.get<Thesis[]>("/api/thesis");
   },
 
   /**
@@ -2185,7 +2730,7 @@ export const thesisService = {
    * Headers: Authorization: Bearer <token>
    */
   async createThesis(data: Partial<Thesis>): Promise<Thesis> {
-    return apiClient.post<Thesis>('/api/thesis', data);
+    return apiClient.post<Thesis>("/api/thesis", data);
   },
 
   /**
@@ -2213,7 +2758,7 @@ export const thesisService = {
    * Headers: Authorization: Bearer <token>
    */
   async getTopicRegistrations(): Promise<TopicRegistration[]> {
-    return apiClient.get<TopicRegistration[]>('/api/topic-registrations');
+    return apiClient.get<TopicRegistration[]>("/api/topic-registrations");
   },
 
   /**
@@ -2221,8 +2766,10 @@ export const thesisService = {
    * POST /api/topic-registrations
    * Headers: Authorization: Bearer <token>
    */
-  async createTopicRegistration(data: Partial<TopicRegistration>): Promise<TopicRegistration> {
-    return apiClient.post<TopicRegistration>('/api/topic-registrations', data);
+  async createTopicRegistration(
+    data: Partial<TopicRegistration>,
+  ): Promise<TopicRegistration> {
+    return apiClient.post<TopicRegistration>("/api/topic-registrations", data);
   },
 
   /**
@@ -2230,8 +2777,14 @@ export const thesisService = {
    * PUT /api/topic-registrations/:id
    * Headers: Authorization: Bearer <token>
    */
-  async updateTopicRegistration(id: string, data: Partial<TopicRegistration>): Promise<TopicRegistration> {
-    return apiClient.put<TopicRegistration>(`/api/topic-registrations/${id}`, data);
+  async updateTopicRegistration(
+    id: string,
+    data: Partial<TopicRegistration>,
+  ): Promise<TopicRegistration> {
+    return apiClient.put<TopicRegistration>(
+      `/api/topic-registrations/${id}`,
+      data,
+    );
   },
 
   /**
@@ -2240,7 +2793,9 @@ export const thesisService = {
    * Headers: Authorization: Bearer <token>
    */
   async deleteTopicRegistration(id: string): Promise<{ message: string }> {
-    return apiClient.delete<{ message: string }>(`/api/topic-registrations/${id}`);
+    return apiClient.delete<{ message: string }>(
+      `/api/topic-registrations/${id}`,
+    );
   },
 
   // Legacy Routes for /api/weekly-reports
@@ -2250,7 +2805,7 @@ export const thesisService = {
    * Headers: Authorization: Bearer <token>
    */
   async getWeeklyReports(): Promise<WeeklyReport[]> {
-    return apiClient.get<WeeklyReport[]>('/api/weekly-reports');
+    return apiClient.get<WeeklyReport[]>("/api/weekly-reports");
   },
 
   /**
@@ -2259,7 +2814,7 @@ export const thesisService = {
    * Headers: Authorization: Bearer <token>
    */
   async createWeeklyReport(data: Partial<WeeklyReport>): Promise<WeeklyReport> {
-    return apiClient.post<WeeklyReport>('/api/weekly-reports', data);
+    return apiClient.post<WeeklyReport>("/api/weekly-reports", data);
   },
 
   /**
@@ -2267,7 +2822,10 @@ export const thesisService = {
    * PUT /api/weekly-reports/:id
    * Headers: Authorization: Bearer <token>
    */
-  async updateWeeklyReport(id: string, data: Partial<WeeklyReport>): Promise<WeeklyReport> {
+  async updateWeeklyReport(
+    id: string,
+    data: Partial<WeeklyReport>,
+  ): Promise<WeeklyReport> {
     return apiClient.put<WeeklyReport>(`/api/weekly-reports/${id}`, data);
   },
 
@@ -2287,7 +2845,7 @@ export const thesisService = {
    * Headers: Authorization: Bearer <token>
    */
   async getThesisTasks(): Promise<ThesisTask[]> {
-    return apiClient.get<ThesisTask[]>('/api/thesis-tasks');
+    return apiClient.get<ThesisTask[]>("/api/thesis-tasks");
   },
 
   /**
@@ -2296,7 +2854,7 @@ export const thesisService = {
    * Headers: Authorization: Bearer <token>
    */
   async createThesisTask(data: Partial<ThesisTask>): Promise<ThesisTask> {
-    return apiClient.post<ThesisTask>('/api/thesis-tasks', data);
+    return apiClient.post<ThesisTask>("/api/thesis-tasks", data);
   },
 
   /**
@@ -2304,7 +2862,10 @@ export const thesisService = {
    * PUT /api/thesis-tasks/:id
    * Headers: Authorization: Bearer <token>
    */
-  async updateThesisTask(id: string, data: Partial<ThesisTask>): Promise<ThesisTask> {
+  async updateThesisTask(
+    id: string,
+    data: Partial<ThesisTask>,
+  ): Promise<ThesisTask> {
     return apiClient.put<ThesisTask>(`/api/thesis-tasks/${id}`, data);
   },
 
@@ -2318,46 +2879,64 @@ export const thesisService = {
   },
 };
 
-
 // --- topicRegistrationService.ts ---
 import type {
   CreateProposedTopicRequest,
   ProposedTopic,
   CreateTopicRegistrationRequest,
   TopicRegistration,
-} from '@/types/api';
+} from "@/types/api";
 
 export const topicRegistrationService = {
   // ─── Proposed Topics ──────────────────────────────────────────────────────
 
-  async createProposedTopic(data: CreateProposedTopicRequest): Promise<ProposedTopic> {
-    return apiClient.post<ProposedTopic>('/api/topic-registrations/proposed-topics', data);
+  async createProposedTopic(
+    data: CreateProposedTopicRequest,
+  ): Promise<ProposedTopic> {
+    return apiClient.post<ProposedTopic>(
+      "/api/topic-registrations/proposed-topics",
+      data,
+    );
   },
 
   async getProposedTopics(thesisRoundId?: number): Promise<ProposedTopic[]> {
-    const q = thesisRoundId ? `?thesis_round_id=${thesisRoundId}` : '';
-    return apiClient.get<ProposedTopic[]>(`/api/topic-registrations/proposed-topics${q}`);
+    const q = thesisRoundId ? `?thesis_round_id=${thesisRoundId}` : "";
+    return apiClient.get<ProposedTopic[]>(
+      `/api/topic-registrations/proposed-topics${q}`,
+    );
   },
 
-  async getProposedTopicsByInstructor(instructorId: number, thesisRoundId?: number): Promise<ProposedTopic[]> {
+  async getProposedTopicsByInstructor(
+    instructorId: number,
+    thesisRoundId?: number,
+  ): Promise<ProposedTopic[]> {
     const p = new URLSearchParams({ instructor_id: instructorId.toString() });
-    if (thesisRoundId) p.append('thesis_round_id', thesisRoundId.toString());
-    return apiClient.get<ProposedTopic[]>(`/api/topic-registrations/proposed-topics?${p.toString()}`);
+    if (thesisRoundId) p.append("thesis_round_id", thesisRoundId.toString());
+    return apiClient.get<ProposedTopic[]>(
+      `/api/topic-registrations/proposed-topics?${p.toString()}`,
+    );
   },
 
   // ─── Student: Đăng ký đề tài ──────────────────────────────────────────────
   // Gateway: /api/topic-registrations/** → ThesisService /api/v1/thesis/student/topic-registrations/**
 
-  async createTopicRegistration(data: CreateTopicRegistrationRequest): Promise<TopicRegistration> {
-    return apiClient.post<TopicRegistration>('/api/topic-registrations', data);
+  async createTopicRegistration(
+    data: CreateTopicRegistrationRequest,
+  ): Promise<TopicRegistration> {
+    return apiClient.post<TopicRegistration>("/api/topic-registrations", data);
   },
 
-  async getTopicRegistrations(studentId?: number, status?: string): Promise<TopicRegistration[]> {
+  async getTopicRegistrations(
+    studentId?: number,
+    status?: string,
+  ): Promise<TopicRegistration[]> {
     const p = new URLSearchParams();
-    if (studentId) p.append('student_id', studentId.toString());
-    if (status) p.append('status', status);
+    if (studentId) p.append("student_id", studentId.toString());
+    if (status) p.append("status", status);
     const q = p.toString();
-    return apiClient.get<TopicRegistration[]>(`/api/topic-registrations${q ? '?' + q : ''}`);
+    return apiClient.get<TopicRegistration[]>(
+      `/api/topic-registrations${q ? "?" + q : ""}`,
+    );
   },
 
   async getTopicRegistrationById(id: number): Promise<TopicRegistration> {
@@ -2367,31 +2946,45 @@ export const topicRegistrationService = {
   // ─── Instructor: Duyệt đề tài ─────────────────────────────────────────────
   // Đi thẳng qua gateway route: /api/v1/thesis/** → ThesisService /api/v1/thesis/**
 
-  async getRegistrationsForInstructor(status?: string): Promise<TopicRegistration[]> {
-    const res = await apiClient.get<{ success: boolean; data: TopicRegistration[] }>(
-      `/api/v1/thesis/instructor/topic-registrations${status ? `?instructor_status=${status}` : ''}`
+  async getRegistrationsForInstructor(
+    status?: string,
+  ): Promise<TopicRegistration[]> {
+    const res = await apiClient.get<{
+      success: boolean;
+      data: TopicRegistration[];
+    }>(
+      `/api/v1/thesis/instructor/topic-registrations${status ? `?instructor_status=${status}` : ""}`,
     );
     return res.data ?? [];
   },
 
   /** Giảng viên duyệt đề tài */
   async instructorApprove(id: number): Promise<any> {
-    return apiClient.put(`/api/v1/thesis/instructor/topic-registrations/${id}/approve`);
+    return apiClient.put(
+      `/api/v1/thesis/instructor/topic-registrations/${id}/approve`,
+    );
   },
 
   /** Giảng viên từ chối đề tài */
   async instructorReject(id: number, reason: string): Promise<any> {
-    return apiClient.put(`/api/v1/thesis/instructor/topic-registrations/${id}/reject`, { reason });
+    return apiClient.put(
+      `/api/v1/thesis/instructor/topic-registrations/${id}/reject`,
+      { reason },
+    );
   },
 
   // ─── Trưởng Bộ Môn: Duyệt đề tài ─────────────────────────────────────────
   // Gateway: /api/admin/** → ThesisService /api/v1/thesis/admin/**
 
-  async getRegistrationsForHead(params?: { instructor_status?: string; head_status?: string }): Promise<TopicRegistration[]> {
-    const q = params ? '?' + new URLSearchParams(params as any).toString() : '';
-    const res = await apiClient.get<{ success: boolean; data: TopicRegistration[] }>(
-      `/api/admin/topic-registrations${q}`
-    );
+  async getRegistrationsForHead(params?: {
+    instructor_status?: string;
+    head_status?: string;
+  }): Promise<TopicRegistration[]> {
+    const q = params ? "?" + new URLSearchParams(params as any).toString() : "";
+    const res = await apiClient.get<{
+      success: boolean;
+      data: TopicRegistration[];
+    }>(`/api/admin/topic-registrations${q}`);
     return res.data ?? [];
   },
 
@@ -2402,51 +2995,68 @@ export const topicRegistrationService = {
 
   /** Trưởng bộ môn từ chối đề tài */
   async headReject(id: number, reason: string): Promise<any> {
-    return apiClient.put(`/api/admin/topic-registrations/${id}/reject`, { reason });
+    return apiClient.put(`/api/admin/topic-registrations/${id}/reject`, {
+      reason,
+    });
   },
 
   // ─── Backward compatibility (các page cũ dùng, sẽ dần thay thế) ─────────
 
   /** @deprecated dùng instructorApprove / instructorReject */
-  async approveRegistration(id: number, data: { status: string; rejection_reason?: string }): Promise<any> {
-    return data.status === 'APPROVED'
+  async approveRegistration(
+    id: number,
+    data: { status: string; rejection_reason?: string },
+  ): Promise<any> {
+    return data.status === "APPROVED"
       ? this.instructorApprove(id)
-      : this.instructorReject(id, data.rejection_reason || '');
+      : this.instructorReject(id, data.rejection_reason || "");
   },
 
   /** @deprecated dùng headApprove / headReject */
-  async headApproveRegistration(id: number, data: { status: string; rejection_reason?: string }): Promise<any> {
-    return data.status === 'APPROVED'
+  async headApproveRegistration(
+    id: number,
+    data: { status: string; rejection_reason?: string },
+  ): Promise<any> {
+    return data.status === "APPROVED"
       ? this.headApprove(id)
-      : this.headReject(id, data.rejection_reason || '');
+      : this.headReject(id, data.rejection_reason || "");
   },
 
-  async getPendingRegistrations(_instructorId: number): Promise<TopicRegistration[]> {
-    return this.getRegistrationsForInstructor('PENDING');
+  async getPendingRegistrations(
+    _instructorId: number,
+  ): Promise<TopicRegistration[]> {
+    return this.getRegistrationsForInstructor("PENDING");
   },
 
-  async getPendingRegistrationsForHead(_departmentId: number): Promise<TopicRegistration[]> {
-    return this.getRegistrationsForHead({ instructor_status: 'APPROVED', head_status: 'PENDING' });
+  async getPendingRegistrationsForHead(
+    _departmentId: number,
+  ): Promise<TopicRegistration[]> {
+    return this.getRegistrationsForHead({
+      instructor_status: "APPROVED",
+      head_status: "PENDING",
+    });
   },
 };
-
 
 // --- topicService.ts ---
 import type {
   CreateTopicRequest,
   ProposedTopic,
   StandardResponse,
-} from '@/types/api';
+} from "@/types/api";
 
 export const topicService = {
   /**
    * Create a new topic for a thesis round (Instructor only)
    * POST /api/thesis-rounds/:roundId/topics
    */
-  async createTopic(roundId: number, data: CreateTopicRequest): Promise<StandardResponse<ProposedTopic>> {
+  async createTopic(
+    roundId: number,
+    data: CreateTopicRequest,
+  ): Promise<StandardResponse<ProposedTopic>> {
     return apiClient.post<StandardResponse<ProposedTopic>>(
       `/api/thesis-rounds/${roundId}/topics`,
-      data
+      data,
     );
   },
 
@@ -2456,21 +3066,26 @@ export const topicService = {
    */
   async getTopics(
     roundId: number,
-    params?: { isTaken?: boolean; instructorId?: number }
+    params?: { isTaken?: boolean; instructorId?: number },
   ): Promise<StandardResponse<ProposedTopic[]>> {
     const queryParams = new URLSearchParams();
-    if (params?.isTaken !== undefined) queryParams.append('isTaken', params.isTaken.toString());
-    if (params?.instructorId) queryParams.append('instructorId', params.instructorId.toString());
-    
+    if (params?.isTaken !== undefined)
+      queryParams.append("isTaken", params.isTaken.toString());
+    if (params?.instructorId)
+      queryParams.append("instructorId", params.instructorId.toString());
+
     const queryString = queryParams.toString();
     return apiClient.get<StandardResponse<ProposedTopic[]>>(
-      `/api/thesis-rounds/${roundId}/topics${queryString ? `?${queryString}` : ''}`
+      `/api/thesis-rounds/${roundId}/topics${queryString ? `?${queryString}` : ""}`,
     );
   },
 };
 
 // --- reviewScheduleService.ts ---
-import type { ReviewScheduleItemData, AutoScheduleReviewsRequest } from '@/types/api';
+import type {
+  ReviewScheduleItemData,
+  AutoScheduleReviewsRequest,
+} from "@/types/api";
 
 export const reviewScheduleService = {
   /**
@@ -2483,12 +3098,15 @@ export const reviewScheduleService = {
     search?: string;
   }): Promise<ReviewScheduleItemData[]> {
     const query = new URLSearchParams();
-    if (params?.thesis_round_id) query.append('thesisRoundId', params.thesis_round_id.toString());
-    if (params?.status) query.append('status', params.status);
-    if (params?.search) query.append('search', params.search);
+    if (params?.thesis_round_id)
+      query.append("thesisRoundId", params.thesis_round_id.toString());
+    if (params?.status) query.append("status", params.status);
+    if (params?.search) query.append("search", params.search);
 
     const queryString = query.toString();
-    const res = await apiClient.get<any>(`/api/admin/review-schedules${queryString ? `?${queryString}` : ''}`);
+    const res = await apiClient.get<any>(
+      `/api/admin/review-schedules${queryString ? `?${queryString}` : ""}`,
+    );
     return Array.isArray(res) ? res : res?.data || [];
   },
 
@@ -2497,7 +3115,9 @@ export const reviewScheduleService = {
    * GET /api/admin/review-schedules/theses
    */
   async getThesesByRound(thesisRoundId: number): Promise<any[]> {
-    const res = await apiClient.get<any>(`/api/admin/review-schedules/theses?thesisRoundId=${thesisRoundId}`);
+    const res = await apiClient.get<any>(
+      `/api/admin/review-schedules/theses?thesisRoundId=${thesisRoundId}`,
+    );
     return Array.isArray(res) ? res : res?.data || [];
   },
 
@@ -2506,7 +3126,7 @@ export const reviewScheduleService = {
    * POST /api/admin/review-schedules
    */
   async createReviewSchedules(data: any[]): Promise<any> {
-    return apiClient.post('/api/admin/review-schedules', data);
+    return apiClient.post("/api/admin/review-schedules", data);
   },
 
   /**
@@ -2530,48 +3150,70 @@ export const reviewScheduleService = {
    * POST /api/admin/review-schedules/auto
    */
   async autoScheduleReviews(data: AutoScheduleReviewsRequest): Promise<any> {
-    return apiClient.post('/api/admin/review-schedules/auto', data);
+    return apiClient.post("/api/admin/review-schedules/auto", data);
   },
 };
 
 // ─── 1. Grade Review Service ────────────────────────────────────────────────
 export const gradeReviewService = {
   async createReview(data: FormData | any) {
-    return apiClient.post('/api/v1/thesis/student/grade-reviews', data);
+    return apiClient.post("/api/v1/thesis/student/grade-reviews", data);
   },
   async getStudentReviews() {
-    const res = await apiClient.get<any>('/api/v1/thesis/student/grade-reviews');
+    const res = await apiClient.get<any>(
+      "/api/v1/thesis/student/grade-reviews",
+    );
     return Array.isArray(res) ? res : res?.data || [];
   },
   async getAdminReviews(params?: any) {
     const query = new URLSearchParams(params).toString();
-    const res = await apiClient.get<any>(`/api/v1/thesis/admin/grade-reviews${query ? `?${query}` : ''}`);
+    const res = await apiClient.get<any>(
+      `/api/v1/thesis/admin/grade-reviews${query ? `?${query}` : ""}`,
+    );
     return Array.isArray(res) ? res : res?.data || [];
   },
   async assignInstructor(id: number, instructorId: number) {
-    return apiClient.put(`/api/v1/thesis/admin/grade-reviews/${id}/assign`, { instructor_id: instructorId });
+    return apiClient.put(`/api/v1/thesis/afe-reviews/${id}/assign`, {
+      instructor_id: instructorId,
+    });
   },
   async getInstructorReviews() {
-    const res = await apiClient.get<any>('/api/v1/thesis/instructor/grade-reviews');
+    const res = await apiClient.get<any>(
+      "/api/v1/thesis/instructor/grade-reviews",
+    );
     return Array.isArray(res) ? res : res?.data || [];
   },
-  async reassessReview(id: number, data: { reassessed_score: number; reassessment_notes: string }) {
-    return apiClient.put(`/api/v1/thesis/instructor/grade-reviews/${id}/reassess`, data);
+  async reassessReview(
+    id: number,
+    data: { reassessed_score: number; reassessment_notes: string },
+  ) {
+    return apiClient.put(
+      `/api/v1/thesis/instructor/grade-reviews/${id}/reassess`,
+      data,
+    );
   },
-  async resolveReview(id: number, data: { status: string; head_feedback?: string; apply_score?: boolean }) {
-    return apiClient.put(`/api/v1/thesis/admin/grade-reviews/${id}/resolve`, data);
-  }
+  async resolveReview(
+    id: number,
+    data: { status: string; head_feedback?: string; apply_score?: boolean },
+  ) {
+    return apiClient.put(
+      `/api/v1/thesis/admin/grade-reviews/${id}/resolve`,
+      data,
+    );
+  },
 };
 
 // ─── 2. Document & Repository Service ───────────────────────────────────────
 export const documentService = {
   async getDocuments(params?: any) {
     const query = new URLSearchParams(params).toString();
-    const res = await apiClient.get<any>(`/api/v1/thesis/documents${query ? `?${query}` : ''}`);
+    const res = await apiClient.get<any>(
+      `/api/v1/thesis/documents${query ? `?${query}` : ""}`,
+    );
     return Array.isArray(res) ? res : res?.data || [];
   },
   async createDocument(data: FormData | any) {
-    return apiClient.post('/api/v1/thesis/documents', data);
+    return apiClient.post("/api/v1/thesis/documents", data);
   },
   async downloadDocument(id: number) {
     return apiClient.get(`/api/v1/thesis/documents/${id}/download`);
@@ -2581,40 +3223,49 @@ export const documentService = {
   },
   async getRepository(params?: any) {
     const query = new URLSearchParams(params).toString();
-    const res = await apiClient.get<any>(`/api/v1/thesis/documents/repository${query ? `?${query}` : ''}`);
+    const res = await apiClient.get<any>(
+      `/api/v1/thesis/documents/repository${query ? `?${query}` : ""}`,
+    );
     return Array.isArray(res) ? res : res?.data || [];
   },
   async getRepositoryById(id: number) {
-    const res = await apiClient.get<any>(`/api/v1/thesis/documents/repository/${id}`);
+    const res = await apiClient.get<any>(
+      `/api/v1/thesis/documents/repository/${id}`,
+    );
     return res?.data || res;
   },
   async publishThesis(thesisId: number) {
-    return apiClient.post(`/api/v1/thesis/documents/repository/publish/${thesisId}`);
-  }
+    return apiClient.post(
+      `/api/v1/thesis/documents/repository/publish/${thesisId}`,
+    );
+  },
 };
 
 // ─── 3. Excel Batch Service ────────────────────────────────────────────────
 export const excelBatchService = {
   async importStudents(formData: FormData) {
-    return apiClient.post('/api/v1/thesis/excel/import/students', formData);
+    return apiClient.post("/api/v1/thesis/excel/import/students", formData);
   },
   async importProposedTopics(formData: FormData) {
-    return apiClient.post('/api/v1/thesis/excel/import/proposed-topics', formData);
+    return apiClient.post(
+      "/api/v1/thesis/excel/import/proposed-topics",
+      formData,
+    );
   },
   getScoresExportUrl(thesisRoundId?: number | string) {
-    const base = import.meta.env.VITE_API_BASE_URL || '';
-    return `${base}/api/v1/thesis/excel/export/scores?thesis_round_id=${thesisRoundId || 'all'}`;
+    const base = import.meta.env.VITE_API_BASE_URL || "";
+    return `${base}/api/v1/thesis/excel/export/scores?thesis_round_id=${thesisRoundId || "all"}`;
   },
   getDefenseScheduleExportUrl(thesisRoundId?: number | string) {
-    const base = import.meta.env.VITE_API_BASE_URL || '';
-    return `${base}/api/v1/thesis/excel/export/defense-schedule?thesis_round_id=${thesisRoundId || 'all'}`;
-  }
+    const base = import.meta.env.VITE_API_BASE_URL || "";
+    return `${base}/api/v1/thesis/excel/export/defense-schedule?thesis_round_id=${thesisRoundId || "all"}`;
+  },
 };
 
 // ─── 4. Survey Service ──────────────────────────────────────────────────────
 export const surveyService = {
   async getActiveSurveys() {
-    const res = await apiClient.get<any>('/api/v1/thesis/surveys/active');
+    const res = await apiClient.get<any>("/api/v1/thesis/surveys/active");
     return Array.isArray(res) ? res : res?.data || [];
   },
   async getSurveyById(id: number) {
@@ -2626,61 +3277,76 @@ export const surveyService = {
   },
   async getAdminSurveys(params?: any) {
     const query = new URLSearchParams(params).toString();
-    const res = await apiClient.get<any>(`/api/v1/thesis/surveys/admin/list${query ? `?${query}` : ''}`);
+    const res = await apiClient.get<any>(
+      `/api/v1/thesis/surveys/admin/list${query ? `?${query}` : ""}`,
+    );
     return Array.isArray(res) ? res : res?.data || [];
   },
   async createSurvey(data: any) {
-    return apiClient.post('/api/v1/thesis/surveys/admin/create', data);
+    return apiClient.post("/api/v1/thesis/surveys/admin/create", data);
   },
   async getSurveyAnalytics(id: number) {
-    const res = await apiClient.get<any>(`/api/v1/thesis/surveys/admin/${id}/analytics`);
+    const res = await apiClient.get<any>(
+      `/api/v1/thesis/surveys/admin/${id}/analytics`,
+    );
     return res?.data || res;
-  }
+  },
 };
 
 // ─── 5. Academic Ticket Service ─────────────────────────────────────────────
 export const academicTicketService = {
   async createTicket(data: FormData | any) {
-    return apiClient.post('/api/v1/thesis/student/tickets', data);
+    return apiClient.post("/api/v1/thesis/student/tickets", data);
   },
   async getStudentTickets() {
-    const res = await apiClient.get<any>('/api/v1/thesis/student/tickets');
+    const res = await apiClient.get<any>("/api/v1/thesis/student/tickets");
     return Array.isArray(res) ? res : res?.data || [];
   },
   async getAdminTickets(params?: any) {
     const query = new URLSearchParams(params).toString();
-    const res = await apiClient.get<any>(`/api/v1/thesis/admin/tickets${query ? `?${query}` : ''}`);
+    const res = await apiClient.get<any>(
+      `/api/v1/thesis/admin/tickets${query ? `?${query}` : ""}`,
+    );
     return Array.isArray(res) ? res : res?.data || [];
   },
   async getTicketById(id: number) {
     const res = await apiClient.get<any>(`/api/v1/thesis/admin/tickets/${id}`);
     return res?.data || res;
   },
-  async resolveTicket(id: number, data: { status: string; resolution_notes?: string; new_topic_title?: string }) {
+  async resolveTicket(
+    id: number,
+    data: {
+      status: string;
+      resolution_notes?: string;
+      new_topic_title?: string;
+    },
+  ) {
     return apiClient.put(`/api/v1/thesis/admin/tickets/${id}/resolve`, data);
-  }
+  },
 };
 
 // ─── 6. Announcement Service ───────────────────────────────────────────────
 export const announcementService = {
   async getAnnouncements(params?: any) {
     const query = new URLSearchParams(params).toString();
-    const res = await apiClient.get<any>(`/api/v1/thesis/announcements${query ? `?${query}` : ''}`);
+    const res = await apiClient.get<any>(
+      `/api/v1/thesis/announcements${query ? `?${query}` : ""}`,
+    );
     return Array.isArray(res) ? res : res?.data || [];
   },
   async getAnnouncementById(idOrSlug: string | number) {
-    const res = await apiClient.get<any>(`/api/v1/thesis/announcements/${idOrSlug}`);
+    const res = await apiClient.get<any>(
+      `/api/v1/thesis/announcements/${idOrSlug}`,
+    );
     return res?.data || res;
   },
   async createAnnouncement(data: FormData | any) {
-    return apiClient.post('/api/v1/thesis/announcements', data);
+    return apiClient.post("/api/v1/thesis/announcements", data);
   },
   async updateAnnouncement(id: number, data: FormData | any) {
     return apiClient.put(`/api/v1/thesis/announcements/${id}`, data);
   },
   async deleteAnnouncement(id: number) {
     return apiClient.delete(`/api/v1/thesis/announcements/${id}`);
-  }
+  },
 };
-
-

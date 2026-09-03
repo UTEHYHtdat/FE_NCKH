@@ -1,6 +1,4 @@
-// Base Types
-
-export type UserRole = 'student' | 'instructor' | 'head' | 'department_head' | 'admin';
+export type UserRole = 'student' | 'instructor' | 'head' | 'department_head' | 'admin' | 'academic_affairs';
 
 export type GroupMode = 'BOTH' | 'GROUP_ONLY' | 'INDIVIDUAL_ONLY';
 

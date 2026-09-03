@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { BookOpen, Check } from 'lucide-react';
+import { BookOpen, Check, ShieldCheck, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { authService } from '@/plugins/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function Login() {
@@ -22,23 +21,27 @@ export function Login() {
 
   const { login } = useAuth();
 
+  const handleQuickFill = (u: string, p: string) => {
+    setUsername(u);
+    setPassword(p);
+    setError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      // Try API login using AuthContext login
       await login({
-        username: username,
+        username: username.trim(),
         password: password,
       });
 
-      // Navigate to dashboard
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      setError('Tên đăng nhập hoặc mật khẩu không đúng!');
+      setError(error.message || 'Tên đăng nhập hoặc mật khẩu không đúng!');
     } finally {
       setLoading(false);
     }
@@ -77,41 +80,101 @@ export function Login() {
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-12 bg-background">
-        <div className="w-full max-w-md">
-          <div className="mb-8">
+      <div className="flex-1 flex items-center justify-center p-8 bg-background">
+        <div className="w-full max-w-md space-y-6">
+          <div>
             <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
               Chào mừng trở lại
             </h2>
-            <p className="text-muted-foreground">
-              Đăng nhập để tiếp tục quản lý khóa luận
+            <p className="text-muted-foreground text-sm">
+              Đăng nhập để tiếp tục quản lý khóa luận tốt nghiệp
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Quick Login Demo Accounts */}
+          <div className="p-3 bg-muted/50 rounded-lg border text-xs space-y-2">
+            <div className="font-semibold text-muted-foreground flex items-center gap-1.5">
+              <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+              Chọn tài khoản thử nghiệm nhanh:
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleQuickFill('admin', '123456')}
+                className="px-2 py-1.5 text-left border rounded hover:bg-background transition-colors flex flex-col"
+              >
+                <span className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" /> Admin (Quản trị)
+                </span>
+                <span className="text-[10px] text-muted-foreground font-mono">admin / 123456</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickFill('giaovu', '123456')}
+                className="px-2 py-1.5 text-left border rounded hover:bg-background transition-colors flex flex-col bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800"
+              >
+                <span className="font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
+                  <UserCheck className="w-3 h-3" /> Giáo vụ (Đào tạo)
+                </span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">giaovu / 123456</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickFill('truongbomon', '123456')}
+                className="px-2 py-1.5 text-left border rounded hover:bg-background transition-colors flex flex-col"
+              >
+                <span className="font-bold text-purple-600 dark:text-purple-400">Trưởng bộ môn</span>
+                <span className="text-[10px] text-muted-foreground font-mono">truongbomon / 123456</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickFill('giangvien', '123456')}
+                className="px-2 py-1.5 text-left border rounded hover:bg-background transition-colors flex flex-col"
+              >
+                <span className="font-bold text-blue-600 dark:text-blue-400">Giảng viên</span>
+                <span className="text-[10px] text-muted-foreground font-mono">giangvien / 123456</span>
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="p-3 bg-destructive/10 border border-destructive rounded-lg">
-                <p className="text-sm text-destructive">{error}</p>
+                <p className="text-xs text-destructive">{error}</p>
               </div>
             )}
 
-            <Input
-              label="Tên đăng nhập"
-              type="text"
-              placeholder="Nhập tên đăng nhập"
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                setError('');
-              }}
-              required
-            />
-
-            <div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold">Tên đăng nhập</label>
               <Input
-                label="Mật khẩu"
+                type="text"
+                placeholder="Nhập username hoặc mã SV/GV..."
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  setError('');
+                }}
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-semibold">Mật khẩu</label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  {showPassword ? 'Ẩn' : 'Hiện'} mật khẩu
+                </button>
+              </div>
+              <Input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Nhập mật khẩu"
+                placeholder="Nhập mật khẩu..."
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
@@ -119,13 +182,6 @@ export function Login() {
                 }}
                 required
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="text-sm text-primary hover:underline mt-1"
-              >
-                {showPassword ? 'Ẩn' : 'Hiện'} mật khẩu
-              </button>
             </div>
 
             <div className="flex items-center">
@@ -134,7 +190,7 @@ export function Login() {
                 id="remember"
                 className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
               />
-              <label htmlFor="remember" className="ml-2 text-sm text-foreground">
+              <label htmlFor="remember" className="ml-2 text-xs text-foreground">
                 Ghi nhớ đăng nhập
               </label>
             </div>
@@ -142,12 +198,6 @@ export function Login() {
             <Button type="submit" className="w-full" size="lg" disabled={loading}>
               {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
             </Button>
-
-            <div className="text-center">
-              <a href="#" className="text-sm text-primary hover:underline">
-                Quên mật khẩu?
-              </a>
-            </div>
           </form>
         </div>
       </div>

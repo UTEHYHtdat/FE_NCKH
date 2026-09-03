@@ -288,9 +288,7 @@ export function AdminOrganizationManagement() {
 
   return (
     <PageLayout
-      userRole="admin"
-      userName="Admin"
-      title="Quản lý Tổ chức"
+      title="Quản lý Tổ chức & Đào tạo"
       subtitle="Quản lý khoa, bộ môn và lớp học"
     >
       <div className="mb-6">
