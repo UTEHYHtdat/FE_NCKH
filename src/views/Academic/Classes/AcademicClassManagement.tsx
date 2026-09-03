@@ -95,7 +95,7 @@ export function AcademicClassManagement() {
 
   const fetchMajors = async () => {
     try {
-      const data = await adminService.getDepartments(); // Hoặc majors
+      const data = await adminService.getMajors();
       setMajors(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Lỗi tải danh mục chuyên ngành:', error);
@@ -107,7 +107,7 @@ export function AcademicClassManagement() {
     setFormData({
       class_code: '',
       class_name: '',
-      major_id: majors[0]?.id?.toString() || '1',
+      major_id: majors[0]?.id?.toString() || '',
       academic_year: '2026-2027',
       status: true,
     });
@@ -119,7 +119,7 @@ export function AcademicClassManagement() {
     setFormData({
       class_code: cls.class_code,
       class_name: cls.class_name,
-      major_id: cls.major_id?.toString() || '1',
+      major_id: cls.major_id?.toString() || majors[0]?.id?.toString() || '',
       academic_year: cls.academic_year || '2026-2027',
       status: cls.status !== false,
     });
@@ -138,10 +138,13 @@ export function AcademicClassManagement() {
       const payload: any = {
         class_code: formData.class_code.trim(),
         class_name: formData.class_name.trim(),
-        major_id: parseInt(formData.major_id) || 1,
         academic_year: formData.academic_year.trim(),
         status: formData.status,
       };
+
+      if (formData.major_id) {
+        payload.major_id = parseInt(formData.major_id);
+      }
 
       if (editingClass) {
         await adminService.updateClass(editingClass.id, payload);
@@ -478,6 +481,26 @@ export function AcademicClassManagement() {
               required
             />
           </div>
+
+          {majors.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold uppercase text-muted-foreground mb-1">
+                Chuyên ngành <span className="text-destructive">*</span>
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-border rounded-md text-xs bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                value={formData.major_id}
+                onChange={(e) => setFormData({ ...formData, major_id: e.target.value })}
+                required
+              >
+                {majors.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.major_name} ({m.major_code})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-semibold uppercase text-muted-foreground mb-1">

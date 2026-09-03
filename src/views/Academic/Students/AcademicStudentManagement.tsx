@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router';
 import { 
   GraduationCap, Plus, Edit, Trash2, Search, Filter, 
-  FileSpreadsheet, RefreshCw, Loader2, Award, Mail, Phone, BookOpen, School 
+  FileSpreadsheet, RefreshCw, Loader2, Award, Mail, Phone, BookOpen, School, Users 
 } from 'lucide-react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -412,7 +412,39 @@ export function AcademicStudentManagement() {
                 ) : students.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-muted-foreground">
-                      Không tìm thấy sinh viên nào phù hợp
+                      <div className="flex flex-col items-center justify-center gap-2 max-w-md mx-auto">
+                        <Users className="w-9 h-9 text-muted-foreground/30" />
+                        <p className="font-semibold text-sm text-foreground">
+                          {filterClass 
+                            ? `Lớp "${selectedClassInfo?.class_name || ''}" hiện chưa có sinh viên nào`
+                            : 'Không tìm thấy sinh viên nào phù hợp'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {filterClass 
+                            ? 'Bạn có thể bấm "Thêm sinh viên" hoặc "Nhập từ Excel" để bổ sung sinh viên vào lớp này, hoặc bấm nút dưới để xem toàn bộ danh sách sinh viên.'
+                            : 'Thử kiểm tra lại từ khóa tìm kiếm hoặc bấm xóa bộ lọc.'}
+                        </p>
+                        {filterClass && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-xs h-8"
+                              onClick={() => handleFilterClassChange('')}
+                            >
+                              Xem tất cả sinh viên
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              className="text-xs h-8 bg-blue-600 hover:bg-blue-700 text-white gap-1"
+                              onClick={handleOpenAdd}
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              Thêm sinh viên
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -661,7 +693,16 @@ export function AcademicStudentManagement() {
       <ModalImportStudentsExcel
         isOpen={isExcelModalOpen}
         onClose={() => setIsExcelModalOpen(false)}
-        onSuccess={fetchStudents}
+        classes={classes}
+        defaultClassId={filterClass}
+        onSuccess={(targetClassId) => {
+          setIsExcelModalOpen(false);
+          if (targetClassId && targetClassId !== filterClass) {
+            handleFilterClassChange(targetClassId);
+          } else {
+            fetchStudents();
+          }
+        }}
       />
     </PageLayout>
   );

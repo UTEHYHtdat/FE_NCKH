@@ -243,6 +243,14 @@ export const adminService = {
   },
 
   /**
+   * Get all majors
+   * GET /api/admin/classes/majors
+   */
+  async getMajors(): Promise<any[]> {
+    return apiClient.get<any[]>('/api/admin/classes/majors');
+  },
+
+  /**
    * Get class by ID
    * GET /api/admin/classes/:id
    */

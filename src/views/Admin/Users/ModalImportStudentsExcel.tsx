@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/button';
 import { adminService } from '@/plugins/api';
@@ -11,17 +11,32 @@ import * as XLSX from 'xlsx';
 interface ModalImportStudentsExcelProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (targetClassId?: string) => void;
+  classes?: any[];
+  defaultClassId?: string;
 }
 
-export function ModalImportStudentsExcel({ isOpen, onClose, onSuccess }: ModalImportStudentsExcelProps) {
+export function ModalImportStudentsExcel({ 
+  isOpen, 
+  onClose, 
+  onSuccess,
+  classes = [],
+  defaultClassId = ''
+}: ModalImportStudentsExcelProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<string>(defaultClassId);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
     total: number;
     success: number;
     errors: { row: number; message: string }[];
   } | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedClassId(defaultClassId);
+    }
+  }, [isOpen, defaultClassId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -85,6 +100,9 @@ export function ModalImportStudentsExcel({ isOpen, onClose, onSuccess }: ModalIm
     try {
       const formData = new FormData();
       formData.append('file', file);
+      if (selectedClassId) {
+        formData.append('class_id', selectedClassId);
+      }
 
       const res: any = await adminService.importStudentsExcel(formData);
       
@@ -99,7 +117,7 @@ export function ModalImportStudentsExcel({ isOpen, onClose, onSuccess }: ModalIm
 
       if (normalizedResult.success > 0) {
         toast.success(`Tạo thành công ${normalizedResult.success} tài khoản sinh viên!`);
-        onSuccess();
+        onSuccess(selectedClassId);
       } else {
         toast.warning('Không có tài khoản nào được tạo. Vui lòng kiểm tra lại file.');
       }
@@ -132,6 +150,32 @@ export function ModalImportStudentsExcel({ isOpen, onClose, onSuccess }: ModalIm
             <li>Vai trò hệ thống: <b>Sinh viên (STUDENT)</b></li>
           </ul>
         </div>
+
+        {/* Phân lớp cho sinh viên */}
+        {classes.length > 0 && (
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-foreground">
+              Phân vào lớp học:
+            </label>
+            <select
+              className="w-full px-3 py-2 border border-border rounded-md text-xs bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              value={selectedClassId}
+              onChange={(e) => setSelectedClassId(e.target.value)}
+            >
+              <option value="">Tự động nhận diện theo cột "Lớp" trong file Excel</option>
+              {classes.map((cls) => (
+                <option key={cls.id} value={cls.id}>
+                  Gán vào lớp: {cls.class_name} ({cls.class_code})
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-muted-foreground">
+              {selectedClassId 
+                ? 'Toàn bộ sinh viên trong file sẽ được gán trực tiếp vào lớp đã chọn.' 
+                : 'Hệ thống sẽ tự nhận diện theo tên hoặc mã lớp ở cột "Lớp" trong file.'}
+            </p>
+          </div>
+        )}
 
         {/* Nút tải template */}
         <div className="flex justify-between items-center pb-2 border-b">
