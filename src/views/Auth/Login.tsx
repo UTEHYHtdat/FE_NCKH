@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { BookOpen, Check, ShieldCheck, UserCheck } from 'lucide-react';
+import { BookOpen, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,12 +20,6 @@ export function Login() {
   ];
 
   const { login } = useAuth();
-
-  const handleQuickFill = (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
-    setError('');
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,55 +83,6 @@ export function Login() {
             <p className="text-muted-foreground text-sm">
               Đăng nhập để tiếp tục quản lý khóa luận tốt nghiệp
             </p>
-          </div>
-
-          {/* Quick Login Demo Accounts */}
-          <div className="p-3 bg-muted/50 rounded-lg border text-xs space-y-2">
-            <div className="font-semibold text-muted-foreground flex items-center gap-1.5">
-              <UserCheck className="w-3.5 h-3.5 text-blue-600" />
-              Chọn tài khoản thử nghiệm nhanh:
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin', '123456')}
-                className="px-2 py-1.5 text-left border rounded hover:bg-background transition-colors flex flex-col"
-              >
-                <span className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3" /> Admin (Quản trị)
-                </span>
-                <span className="text-[10px] text-muted-foreground font-mono">admin / 123456</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('giaovu', '123456')}
-                className="px-2 py-1.5 text-left border rounded hover:bg-background transition-colors flex flex-col bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800"
-              >
-                <span className="font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
-                  <UserCheck className="w-3 h-3" /> Giáo vụ (Đào tạo)
-                </span>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">giaovu / 123456</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('truongbomon', '123456')}
-                className="px-2 py-1.5 text-left border rounded hover:bg-background transition-colors flex flex-col"
-              >
-                <span className="font-bold text-purple-600 dark:text-purple-400">Trưởng bộ môn</span>
-                <span className="text-[10px] text-muted-foreground font-mono">truongbomon / 123456</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('giangvien', '123456')}
-                className="px-2 py-1.5 text-left border rounded hover:bg-background transition-colors flex flex-col"
-              >
-                <span className="font-bold text-blue-600 dark:text-blue-400">Giảng viên</span>
-                <span className="text-[10px] text-muted-foreground font-mono">giangvien / 123456</span>
-              </button>
-            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
