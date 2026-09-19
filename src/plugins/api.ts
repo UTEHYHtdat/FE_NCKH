@@ -3038,6 +3038,20 @@ export const topicRegistrationService = {
     );
   },
 
+  async importProposedTopicsFromExcel(
+    thesisRoundId: number,
+    file: File,
+  ): Promise<any> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("thesis_round_id", thesisRoundId.toString());
+
+    return apiClient.post<any>(
+      "/api/v1/thesis/excel/import/proposed-topics",
+      formData,
+    );
+  },
+
   // ─── Student: Đăng ký đề tài ──────────────────────────────────────────────
   // Gateway: /api/topic-registrations/** → ThesisService /api/v1/thesis/student/topic-registrations/**
 

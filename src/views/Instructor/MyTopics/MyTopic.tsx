@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, Sliders, Settings, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Sliders, Settings, CheckCircle2, FileSpreadsheet, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,11 +11,13 @@ import { Modal } from '@/components/ui/Modal';
 import { topicRegistrationService, thesisRoundsService, instructorService } from '@/plugins/api';
 import { useAuth } from '@/contexts/AuthContext';
 import type { ProposedTopic, CreateProposedTopicRequest, ThesisRound } from '@/types/api';
+import { ModalImportTopicsExcel } from './components/ModalImportTopicsExcel';
 
 export function MyTopics() {
   const { user } = useAuth();
   const userRole = user?.role || 'instructor';
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isImportExcelModalOpen, setIsImportExcelModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [topics, setTopics] = useState<ProposedTopic[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -224,15 +226,26 @@ export function MyTopics() {
       subtitle={viewMode === 'rounds' ? 'Chọn đợt khóa luận để xem đề tài' : 'Quản lý các đề tài đã đề xuất'}
       actions={
         viewMode === 'topics' ? (
-          <>
+          <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={handleBackToRounds}>
               ← Quay lại
             </Button>
-            <Button onClick={() => setIsCreateModalOpen(true)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsImportExcelModalOpen(true)}
+              className="flex items-center gap-1.5 shadow-sm border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Nhập từ Excel
+            </Button>
+            <Button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-1.5 shadow-sm cursor-pointer"
+            >
               <Plus className="w-4 h-4" />
               Đề xuất đề tài mới
             </Button>
-          </>
+          </div>
         ) : null
       }
     >
@@ -447,9 +460,34 @@ export function MyTopics() {
 
               {/* Topics Grid */}
               {topics.length === 0 ? (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <p className="text-muted-foreground">Chưa có đề tài nào</p>
+                <Card className="border-dashed border-2">
+                  <CardContent className="p-12 text-center flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-3">
+                      <FileSpreadsheet className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-semibold text-base text-foreground">Chưa có đề tài nào trong đợt này</h3>
+                    <p className="text-xs text-muted-foreground mt-1 max-w-md">
+                      Bạn có thể đề xuất đề tài mới từng đề tài một hoặc tải lên danh sách nhiều đề tài cùng lúc bằng file Excel.
+                    </p>
+                    <div className="flex items-center gap-3 mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsImportExcelModalOpen(true)}
+                        className="gap-1.5 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+                      >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Nhập danh sách từ Excel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Đề xuất đề tài mới
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ) : (
@@ -742,6 +780,25 @@ export function MyTopics() {
           </div>
         </form>
       </Modal>
+
+      {/* Modal Tải lên danh sách Đề tài từ file Excel */}
+      <ModalImportTopicsExcel
+        isOpen={isImportExcelModalOpen}
+        onClose={() => setIsImportExcelModalOpen(false)}
+        onSuccess={() => {
+          fetchTopics();
+          fetchInstructorProfile();
+        }}
+        selectedRound={selectedRound}
+        quotaInfo={(() => {
+          if (!selectedRound) return null;
+          const assign = getMyAssignmentForRound(selectedRound.id);
+          return {
+            quota: assign?.supervision_quota || 0,
+            currentLoad: assign?.current_load || topics.length,
+          };
+        })()}
+      />
     </PageLayout>
   );
 }
