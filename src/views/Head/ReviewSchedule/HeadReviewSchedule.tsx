@@ -524,7 +524,7 @@ export function HeadReviewSchedule() {
                       <th className="text-left py-3 px-3.5 font-semibold text-muted-foreground min-w-[130px]">GV Hướng dẫn</th>
                       <th className="text-left py-3 px-3.5 font-semibold text-muted-foreground min-w-[150px]">GV Phản biện</th>
                       <th className="text-left py-3 px-3.5 font-semibold text-muted-foreground min-w-[130px]">Thời gian</th>
-                      <th className="text-left py-3 px-3.5 font-semibold text-muted-foreground min-w-[120px]">Phòng & Điểm</th>
+                      <th className="text-left py-3 px-3.5 font-semibold text-muted-foreground min-w-[120px]">Phòng</th>
                       <th className="text-left py-3 px-3.5 font-semibold text-muted-foreground">Trạng thái</th>
                       <th className="text-right py-3 px-3.5 font-semibold text-muted-foreground min-w-[100px]">Thao tác</th>
                     </tr>
@@ -573,11 +573,6 @@ export function HeadReviewSchedule() {
                               <MapPin className="w-3 h-3 text-red-500" />
                               <span>{schedule.location || 'Chưa xếp phòng'}</span>
                             </div>
-                            {schedule.reviewScore1 !== null && schedule.reviewScore1 !== undefined && (
-                              <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                                Điểm: {schedule.reviewScore1} {schedule.reviewScore2 ? ` / ${schedule.reviewScore2}` : ''}
-                              </div>
-                            )}
                           </td>
                           <td className="py-3 px-3.5">
                             <Badge variant={getStatusBadgeVariant(schedule.status)} className="text-[10px]">

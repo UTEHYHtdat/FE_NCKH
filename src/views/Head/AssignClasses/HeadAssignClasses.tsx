@@ -16,7 +16,12 @@ import {
   Trash2,
   GraduationCap,
   Sparkles,
-  UserCheck
+  UserCheck,
+  Plus,
+  ArrowRight,
+  ArrowLeft,
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -96,10 +101,10 @@ export function HeadAssignClasses() {
   const [isFetchingClasses, setIsFetchingClasses] = useState(false);
   const [isSavingClasses, setIsSavingClasses] = useState(false);
 
-  // Filters for Classes
-  const [classSearchTerm, setClassSearchTerm] = useState('');
+  // Filters for 2 split tables (Classes)
+  const [unassignedSearchTerm, setUnassignedSearchTerm] = useState('');
+  const [assignedSearchTerm, setAssignedSearchTerm] = useState('');
   const [filterMajor, setFilterMajor] = useState<string>('all');
-  const [classFilterTab, setClassFilterTab] = useState<'all' | 'assigned' | 'unassigned'>('all');
 
   // Tab 2: Individual Students state
   const [assignedStudents, setAssignedStudents] = useState<AssignedStudentItem[]>([]);
@@ -220,31 +225,35 @@ export function HeadAssignClasses() {
     return new Set<number>(assignedStudents.map((s) => s.student_id));
   }, [assignedStudents]);
 
-  // ─── TAB 1: THAO TÁC LỚP HỌC ───────────────────────────────────────────────
-  const handleToggleClass = (classId: number) => {
+  // ─── TAB 1: THAO TÁC LỚP HỌC (2 BẢNG CHIA 2 BÊN) ────────────────────────
+  const handleAddClass = (classId: number) => {
     setAssignedClassIds((prev) => {
       const next = new Set(prev);
-      if (next.has(classId)) {
-        next.delete(classId);
-      } else {
-        next.add(classId);
-      }
+      next.add(classId);
       return next;
     });
   };
 
-  const handleSelectAllVisibleClasses = () => {
+  const handleRemoveClass = (classId: number) => {
     setAssignedClassIds((prev) => {
       const next = new Set(prev);
-      filteredClasses.forEach((c) => next.add(c.id));
+      next.delete(classId);
       return next;
     });
   };
 
-  const handleDeselectAllVisibleClasses = () => {
+  const handleAddAllFilteredUnassigned = () => {
     setAssignedClassIds((prev) => {
       const next = new Set(prev);
-      filteredClasses.forEach((c) => next.delete(c.id));
+      unassignedClasses.forEach((c) => next.add(c.id));
+      return next;
+    });
+  };
+
+  const handleRemoveAllAssigned = () => {
+    setAssignedClassIds((prev) => {
+      const next = new Set(prev);
+      assignedClasses.forEach((c) => next.delete(c.id));
       return next;
     });
   };
@@ -261,7 +270,7 @@ export function HeadAssignClasses() {
 
       setInitialAssignedClassIds(new Set(assignedClassIds));
       toast.success(
-        `Đã cập nhật phân công ${classIdsArray.length} lớp cho môn học/đợt "${selectedRound.round_name}"`
+        `Đã cập nhật phân công ${classIdsArray.length} lớp cho đợt "${selectedRound.round_name}"`
       );
     } catch (err: any) {
       console.error('Lỗi lưu phân công lớp:', err);
@@ -271,19 +280,17 @@ export function HeadAssignClasses() {
     }
   };
 
-  const filteredClasses = useMemo(() => {
+  // Danh sách Lớp CHƯA THÊM vào đợt (Bảng bên trái)
+  const unassignedClasses = useMemo(() => {
     return allClasses.filter((c) => {
-      const isAssigned = assignedClassIds.has(c.id);
-
-      if (classFilterTab === 'assigned' && !isAssigned) return false;
-      if (classFilterTab === 'unassigned' && isAssigned) return false;
+      if (assignedClassIds.has(c.id)) return false;
 
       if (filterMajor !== 'all' && c.major_id !== Number(filterMajor)) {
         return false;
       }
 
-      if (classSearchTerm.trim()) {
-        const query = classSearchTerm.toLowerCase();
+      if (unassignedSearchTerm.trim()) {
+        const query = unassignedSearchTerm.toLowerCase();
         const codeMatch = c.class_code?.toLowerCase().includes(query);
         const nameMatch = c.class_name?.toLowerCase().includes(query);
         const majorMatch = c.major?.major_name?.toLowerCase().includes(query);
@@ -292,7 +299,24 @@ export function HeadAssignClasses() {
 
       return true;
     });
-  }, [allClasses, assignedClassIds, classFilterTab, filterMajor, classSearchTerm]);
+  }, [allClasses, assignedClassIds, filterMajor, unassignedSearchTerm]);
+
+  // Danh sách Lớp ĐÃ THÊM vào đợt (Bảng bên phải)
+  const assignedClasses = useMemo(() => {
+    return allClasses.filter((c) => {
+      if (!assignedClassIds.has(c.id)) return false;
+
+      if (assignedSearchTerm.trim()) {
+        const query = assignedSearchTerm.toLowerCase();
+        const codeMatch = c.class_code?.toLowerCase().includes(query);
+        const nameMatch = c.class_name?.toLowerCase().includes(query);
+        const majorMatch = c.major?.major_name?.toLowerCase().includes(query);
+        if (!codeMatch && !nameMatch && !majorMatch) return false;
+      }
+
+      return true;
+    });
+  }, [allClasses, assignedClassIds, assignedSearchTerm]);
 
   const hasUnsavedClassChanges = useMemo(() => {
     if (assignedClassIds.size !== initialAssignedClassIds.size) return true;
@@ -404,8 +428,8 @@ export function HeadAssignClasses() {
     <PageLayout
       userRole={userRole as any}
       userName={user?.fullName || 'Trưởng bộ môn'}
-      title="Phân công lớp & Sinh viên tham gia môn học"
-      subtitle="Chỉ định lớp học hoặc thêm lẻ sinh viên (học ghép, học lại) được phép xem và đăng ký Đồ án tốt nghiệp / Đồ án môn học / Bài tập lớn"
+      title="Phân công Lớp & Sinh viên tham gia Đợt Đề tài"
+      subtitle="Chỉ định danh sách lớp học hoặc thêm sinh viên (học ghép, học lại) được phép tham gia đợt đề tài / khóa luận tốt nghiệp"
       actions={
         <div className="flex items-center gap-2">
           {mainTab === 'classes' && hasUnsavedClassChanges && (
@@ -430,13 +454,14 @@ export function HeadAssignClasses() {
         </div>
       }
     >
-      {/* 1. KHỐI CHỌN MÔN HỌC / ĐỢT & THỐNG KÊ */}
+      {/* 1. KHỐI CHỌN ĐỢT ĐỀ TÀI / KHÓA LUẬN & THỐNG KÊ */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {/* Bộ chọn đợt */}
-        <Card className="md:col-span-1 shadow-sm">
+        <Card className="md:col-span-1 shadow-sm border-primary/20 bg-primary/[0.01]">
           <CardContent className="p-4">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-              1. Chọn Môn học / Đợt:
+            <label className="text-xs font-semibold text-primary uppercase tracking-wider mb-2 block flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" />
+              1. Chọn Đợt Đề tài / Khóa luận:
             </label>
             {isFetchingRounds ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -452,7 +477,7 @@ export function HeadAssignClasses() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn môn học / đợt..." />
+                  <SelectValue placeholder="Chọn đợt đề tài / khóa luận..." />
                 </SelectTrigger>
                 <SelectContent>
                   {rounds.map((round) => (
@@ -584,58 +609,88 @@ export function HeadAssignClasses() {
         </button>
       </div>
 
-      {/* ─── TAB 1: PHÂN CÔNG THEO LỚP HỌC ──────────────────────────────────── */}
+      {/* ─── TAB 1: PHÂN CÔNG THEO LỚP HỌC (2 BẢNG CHIA 2 BÊN) ──────────── */}
       {mainTab === 'classes' && (
         <div className="space-y-4">
-          {/* Bộ lọc & tìm kiếm lớp */}
-          <Card className="shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-                {/* Tabs lọc trạng thái */}
-                <div className="flex gap-1 p-1 bg-muted/60 rounded-lg w-full md:w-auto">
-                  <Button
-                    size="sm"
-                    variant={classFilterTab === 'all' ? 'default' : 'ghost'}
-                    onClick={() => setClassFilterTab('all')}
-                    className="text-xs h-8"
-                  >
-                    Tất cả lớp ({allClasses.length})
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={classFilterTab === 'assigned' ? 'default' : 'ghost'}
-                    onClick={() => setClassFilterTab('assigned')}
-                    className="text-xs h-8 flex items-center gap-1.5"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                    Đã chọn ({assignedClassIds.size})
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={classFilterTab === 'unassigned' ? 'default' : 'ghost'}
-                    onClick={() => setClassFilterTab('unassigned')}
-                    className="text-xs h-8"
-                  >
-                    Chưa chọn ({allClasses.length - assignedClassIds.size})
-                  </Button>
+          {/* Cảnh báo thay đổi chưa lưu */}
+          {hasUnsavedClassChanges && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-900 dark:text-amber-200 text-sm shadow-sm">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                <span>
+                  Bạn có thay đổi phân công lớp <strong>chưa lưu</strong> (Hiện chọn <strong>{assignedClassIds.size}</strong> lớp). Hãy bấm nút <strong>"Lưu phân công lớp"</strong> để hệ thống cập nhật.
+                </span>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleSaveClassAssignments}
+                disabled={!selectedRound || isSavingClasses}
+                className="bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1.5 shrink-0 self-end sm:self-auto"
+              >
+                {isSavingClasses ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Save className="w-3.5 h-3.5" />
+                )}
+                Lưu thay đổi ngay
+              </Button>
+            </div>
+          )}
+
+          {/* Grid 2 Bảng: Bên Trái (Chưa thêm) - Bên Phải (Đã thêm) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* ─── BẢNG 1 (BÊN TRÁI): LỚP CHƯA THÊM VÀO ĐỢT ─── */}
+            <Card className="shadow-sm border border-border flex flex-col h-[650px]">
+              <CardContent className="p-4 flex flex-col h-full">
+                {/* Header Bảng 1 */}
+                <div className="flex items-center justify-between pb-3 border-b border-border">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
+                      <School className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">
+                        Lớp chưa thêm vào đợt
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        Danh sách lớp khả dụng có thể gán vào đợt đề tài này
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {unassignedClasses.length} lớp
+                    </Badge>
+                    {unassignedClasses.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleAddAllFilteredUnassigned}
+                        className="text-xs h-7 px-2.5 flex items-center gap-1 text-primary border-primary/30 hover:bg-primary/5"
+                        title="Thêm tất cả lớp đang hiển thị sang đợt"
+                      >
+                        <ArrowRight className="w-3 h-3" />
+                        Thêm tất cả
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
-                {/* Tìm kiếm & Lọc chuyên ngành */}
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                  <div className="relative flex-1 md:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                {/* Bộ lọc Bảng 1 */}
+                <div className="flex flex-col sm:flex-row gap-2 py-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                     <Input
-                      placeholder="Tìm mã lớp, tên lớp..."
-                      value={classSearchTerm}
-                      onChange={(e) => setClassSearchTerm(e.target.value)}
-                      className="pl-9 text-xs h-9"
+                      placeholder="Tìm mã lớp, tên lớp chưa gán..."
+                      value={unassignedSearchTerm}
+                      onChange={(e) => setUnassignedSearchTerm(e.target.value)}
+                      className="pl-8 text-xs h-8"
                     />
                   </div>
-
                   <select
                     value={filterMajor}
                     onChange={(e) => setFilterMajor(e.target.value)}
-                    className="px-3 py-1.5 border border-input rounded-md bg-background text-xs h-9 focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="px-2.5 py-1 border border-input rounded-md bg-background text-xs h-8 focus:outline-none focus:ring-1 focus:ring-primary"
                   >
                     <option value="all">Tất cả ngành</option>
                     {majors.map((m: any) => (
@@ -644,139 +699,196 @@ export function HeadAssignClasses() {
                       </option>
                     ))}
                   </select>
-
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleSelectAllVisibleClasses}
-                    className="text-xs h-9 flex items-center gap-1"
-                    title="Chọn tất cả lớp đang hiển thị"
-                  >
-                    <CheckSquare className="w-3.5 h-3.5" />
-                    Chọn tất cả
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleDeselectAllVisibleClasses}
-                    className="text-xs h-9 text-muted-foreground"
-                    title="Bỏ chọn tất cả lớp đang hiển thị"
-                  >
-                    <Square className="w-3.5 h-3.5" />
-                    Bỏ chọn
-                  </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Bảng danh sách lớp học */}
-          <Card className="shadow-sm">
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/40 text-xs text-muted-foreground uppercase">
-                      <th className="py-3 px-4 text-left w-12">
-                        <span className="sr-only">Tích chọn</span>
-                      </th>
-                      <th className="py-3 px-4 text-left">Mã lớp</th>
-                      <th className="py-3 px-4 text-left">Tên lớp học</th>
-                      <th className="py-3 px-4 text-left">Chuyên ngành / Khoa</th>
-                      <th className="py-3 px-4 text-center">Khóa học</th>
-                      <th className="py-3 px-4 text-center">Sĩ số SV</th>
-                      <th className="py-3 px-4 text-center">Trạng thái tham gia</th>
-                      <th className="py-3 px-4 text-right">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border text-sm">
-                    {isFetchingClasses ? (
+                {/* Table Bảng 1 */}
+                <div className="flex-1 overflow-y-auto border border-border rounded-lg bg-card">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/60 sticky top-0 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider z-10">
                       <tr>
-                        <td colSpan={8} className="py-12 text-center text-muted-foreground">
-                          <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2" />
-                          Đang tải danh sách lớp học...
-                        </td>
+                        <th className="py-2.5 px-3 text-left">Mã lớp</th>
+                        <th className="py-2.5 px-3 text-left">Tên lớp & Ngành</th>
+                        <th className="py-2.5 px-2 text-center w-14">Sĩ số</th>
+                        <th className="py-2.5 px-3 text-right w-24">Thao tác</th>
                       </tr>
-                    ) : filteredClasses.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="py-12 text-center text-muted-foreground">
-                          <School className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                          Không tìm thấy lớp học nào phù hợp với bộ lọc
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredClasses.map((cls) => {
-                        const isAssigned = assignedClassIds.has(cls.id);
-                        return (
-                          <tr
-                            key={cls.id}
-                            onClick={() => handleToggleClass(cls.id)}
-                            className={`hover:bg-muted/40 transition-colors cursor-pointer ${
-                              isAssigned ? 'bg-primary/5' : ''
-                            }`}
-                          >
-                            <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                              <input
-                                type="checkbox"
-                                checked={isAssigned}
-                                onChange={() => handleToggleClass(cls.id)}
-                                className="w-4 h-4 rounded text-primary focus:ring-primary border-input cursor-pointer"
-                              />
-                            </td>
-                            <td className="py-3 px-4 font-semibold text-primary">
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {isFetchingClasses ? (
+                        <tr>
+                          <td colSpan={4} className="py-12 text-center text-muted-foreground">
+                            <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1.5" />
+                            Đang tải danh sách lớp...
+                          </td>
+                        </tr>
+                      ) : unassignedClasses.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="py-16 text-center text-muted-foreground">
+                            <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-emerald-500 opacity-60" />
+                            <p className="font-medium text-foreground">Không còn lớp nào chưa gán</p>
+                            <p className="text-[11px] mt-0.5">
+                              Tất cả lớp học phù hợp đã được gán vào đợt này
+                            </p>
+                          </td>
+                        </tr>
+                      ) : (
+                        unassignedClasses.map((cls) => (
+                          <tr key={cls.id} className="hover:bg-muted/40 transition-colors">
+                            <td className="py-2.5 px-3 font-semibold text-primary">
                               {cls.class_code}
                             </td>
-                            <td className="py-3 px-4">
-                              <p className="font-medium text-foreground">{cls.class_name}</p>
+                            <td className="py-2.5 px-3">
+                              <p className="font-medium text-foreground truncate max-w-[170px]">
+                                {cls.class_name}
+                              </p>
+                              <span className="text-[10px] text-muted-foreground block truncate max-w-[170px]">
+                                {cls.major?.major_name || 'Chuyên ngành chung'}
+                              </span>
                             </td>
-                            <td className="py-3 px-4 text-xs text-muted-foreground">
-                              {cls.major?.major_name || 'Chuyên ngành chung'}
-                              {cls.major?.department?.department_name && (
-                                <span className="block text-[11px] opacity-75">
-                                  {cls.major.department.department_name}
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-3 px-4 text-center text-xs text-muted-foreground">
-                              {cls.academic_year || '2026-2027'}
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <Badge variant="outline" className="font-mono text-xs">
-                                <Users className="w-3 h-3 mr-1 text-muted-foreground" />
+                            <td className="py-2.5 px-2 text-center">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
                                 {cls.student_count || 0}
                               </Badge>
                             </td>
-                            <td className="py-3 px-4 text-center">
-                              {isAssigned ? (
-                                <Badge variant="emerald" className="text-xs">
-                                  <Check className="w-3 h-3 mr-1" />
-                                  Được tham gia
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-xs text-muted-foreground">
-                                  Chưa gán
-                                </Badge>
-                              )}
-                            </td>
-                            <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                            <td className="py-2.5 px-3 text-right">
                               <Button
                                 size="sm"
-                                variant={isAssigned ? 'outline' : 'default'}
-                                onClick={() => handleToggleClass(cls.id)}
-                                className="text-xs h-7 px-3"
+                                onClick={() => handleAddClass(cls.id)}
+                                className="text-xs h-7 px-2.5 bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-1 ml-auto"
                               >
-                                {isAssigned ? 'Gỡ bỏ' : 'Thêm vào'}
+                                <Plus className="w-3 h-3" />
+                                Thêm vào
                               </Button>
                             </td>
                           </tr>
-                        );
-                      })
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* ─── BẢNG 2 (BÊN PHẢI): LỚP ĐÃ THÊM VÀO ĐỢT ─── */}
+            <Card className="shadow-sm border border-emerald-500/30 bg-emerald-500/[0.02] flex flex-col h-[650px]">
+              <CardContent className="p-4 flex flex-col h-full">
+                {/* Header Bảng 2 */}
+                <div className="flex items-center justify-between pb-3 border-b border-border">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">
+                        Lớp đã thêm vào đợt
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        Các lớp chính khóa chính thức được tham gia đợt đề tài này
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="emerald" className="text-xs font-semibold">
+                      {assignedClasses.length} lớp ({totalClassStudents} SV)
+                    </Badge>
+                    {assignedClasses.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleRemoveAllAssigned}
+                        className="text-xs h-7 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center gap-1"
+                        title="Gỡ toàn bộ lớp khỏi đợt"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Gỡ tất cả
+                      </Button>
                     )}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                  </div>
+                </div>
+
+                {/* Bộ lọc Bảng 2 */}
+                <div className="py-3">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Tìm kiếm trong danh sách lớp đã gán..."
+                      value={assignedSearchTerm}
+                      onChange={(e) => setAssignedSearchTerm(e.target.value)}
+                      className="pl-8 text-xs h-8 bg-background"
+                    />
+                  </div>
+                </div>
+
+                {/* Table Bảng 2 */}
+                <div className="flex-1 overflow-y-auto border border-border rounded-lg bg-card">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/60 sticky top-0 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider z-10">
+                      <tr>
+                        <th className="py-2.5 px-3 text-left">Mã lớp</th>
+                        <th className="py-2.5 px-3 text-left">Tên lớp & Ngành</th>
+                        <th className="py-2.5 px-2 text-center w-14">Sĩ số</th>
+                        <th className="py-2.5 px-3 text-right w-24">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {isFetchingClasses ? (
+                        <tr>
+                          <td colSpan={4} className="py-12 text-center text-muted-foreground">
+                            <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1.5" />
+                            Đang tải danh sách lớp đã gán...
+                          </td>
+                        </tr>
+                      ) : assignedClasses.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="py-16 text-center text-muted-foreground">
+                            <School className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                            <p className="font-medium text-foreground">Chưa có lớp nào được gán vào đợt</p>
+                            <p className="text-[11px] mt-0.5">
+                              Nhấn nút "Thêm vào" từ bảng bên trái để gán lớp vào đợt đề tài này
+                            </p>
+                          </td>
+                        </tr>
+                      ) : (
+                        assignedClasses.map((cls) => (
+                          <tr key={cls.id} className="hover:bg-muted/40 transition-colors bg-emerald-500/[0.03]">
+                            <td className="py-2.5 px-3 font-semibold text-emerald-700 dark:text-emerald-400">
+                              {cls.class_code}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <p className="font-medium text-foreground truncate max-w-[170px]">
+                                {cls.class_name}
+                              </p>
+                              <span className="text-[10px] text-muted-foreground block truncate max-w-[170px]">
+                                {cls.major?.major_name || 'Chuyên ngành chung'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-2 text-center">
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] px-1.5 py-0 font-mono text-emerald-700 border-emerald-500/30"
+                              >
+                                {cls.student_count || 0}
+                              </Badge>
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRemoveClass(cls.id)}
+                                className="text-xs h-7 px-2.5 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive flex items-center gap-1 ml-auto"
+                              >
+                                <X className="w-3 h-3" />
+                                Gỡ bỏ
+                              </Button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
 

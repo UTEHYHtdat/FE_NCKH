@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Shield, Calendar, Users, Plus, Search, Crown, FileText, BookOpen } from 'lucide-react';
+import {
+  Shield,
+  Calendar,
+  Users,
+  Plus,
+  Search,
+  Crown,
+  FileText,
+  BookOpen,
+  Eye,
+} from 'lucide-react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +25,6 @@ import { translateStatus, getStatusBadgeVariant } from '@/helpers/constant';
 
 import { ExcelBatchActions } from '@/components/shared/ExcelBatchActions';
 import { excelBatchService } from '@/plugins/api';
-
 export function DefenseCouncils() {
   const { user } = useAuth();
   const userRole = user?.role || 'head';
@@ -35,7 +44,9 @@ export function DefenseCouncils() {
     try {
       setLoading(true);
       const data = await councilService.getCouncils();
-      const councilsArray = Array.isArray(data) ? data : (data as any)?.data || [];
+      const councilsArray = Array.isArray(data)
+        ? data
+        : (data as any)?.data || [];
       setCouncils(councilsArray);
     } catch (error) {
       console.error('Error fetching councils:', error);
@@ -48,7 +59,9 @@ export function DefenseCouncils() {
   const fetchRounds = async () => {
     try {
       const data = await thesisRoundsService.getActiveThesisRoundsForHead();
-      const roundsArray = Array.isArray(data) ? data : (data as any)?.data || [];
+      const roundsArray = Array.isArray(data)
+        ? data
+        : (data as any)?.data || [];
       setRounds(roundsArray);
     } catch (error) {
       console.error('Error fetching rounds:', error);
@@ -73,19 +86,47 @@ export function DefenseCouncils() {
       !searchTerm ||
       council.council_name.toLowerCase().includes(searchLower) ||
       council.council_code.toLowerCase().includes(searchLower) ||
-      (council.instructors_defense_councils_chairman_idToinstructors?.users?.full_name || '')
+      (
+        council.instructors_defense_councils_chairman_idToinstructors?.users
+          ?.full_name || ''
+      )
         .toLowerCase()
         .includes(searchLower) ||
       (council.venue || '').toLowerCase().includes(searchLower);
 
     // Status filter
-    const matchesStatus = statusFilter === 'all' || council.status === statusFilter;
+    const matchesStatus =
+      statusFilter === 'all' || council.status === statusFilter;
 
     // Round filter
-    const matchesRound = roundFilter === 'all' || council.thesis_round_id?.toString() === roundFilter;
+    const matchesRound =
+      roundFilter === 'all' ||
+      council.thesis_round_id?.toString() === roundFilter;
 
     return matchesSearch && matchesStatus && matchesRound;
   });
+  const Header = [
+    { text: 'STT', value: '' },
+    { text: 'Tên hội đồng', value: 'council.council_name' },
+    { text: 'Mã hội đồng', value: 'council.council_code' },
+    { text: 'Ngày bảo vệ', value: 'council.defense_date' },
+    {
+      text: 'Chủ tịch',
+      value:
+        'council.instructors_defense_councils_chairman_idToinstructors.users.full_name',
+      width: 'w-1/6',
+    },
+    {
+      text: 'Thư ký',
+      value:
+        'council.instructors_defense_councils_secretary_idToinstructors.users.full_name',
+    },
+    { text: 'Luận văn', value: 'council.defense_assignments.length' },
+    { text: 'Thành viên', value: 'council.council_members.length' },
+
+    { text: 'Thao tác', value: '' },
+    { text: 'Trạng thái', value: 'council.status' },
+  ];
 
   return (
     <PageLayout
@@ -96,7 +137,9 @@ export function DefenseCouncils() {
       actions={
         <div className="flex items-center gap-2">
           <ExcelBatchActions
-            exportUrl={excelBatchService.getDefenseScheduleExportUrl(roundFilter)}
+            exportUrl={excelBatchService.getDefenseScheduleExportUrl(
+              roundFilter,
+            )}
             exportLabel="Xuất Lịch Hội đồng (Excel)"
           />
           <Button onClick={() => setIsModalOpen(true)}>
@@ -147,8 +190,10 @@ export function DefenseCouncils() {
 
       {/* Councils Grid */}
       {loading ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Đang tải danh sách hội đồng...</p>
+        <div className="p-12 text-center text-muted-foreground">
+          <p className="text-muted-foreground">
+            Đang tải danh sách hội đồng...
+          </p>
         </div>
       ) : filteredCouncils.length === 0 ? (
         <Card>
@@ -160,82 +205,106 @@ export function DefenseCouncils() {
                 : 'Chưa có hội đồng nào'}
             </p>
             {councils.length === 0 && (
-              <Button onClick={() => setIsModalOpen(true)}>Tạo hội đồng đầu tiên</Button>
+              <Button onClick={() => setIsModalOpen(true)}>
+                Tạo hội đồng đầu tiên
+              </Button>
             )}
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCouncils.map((council) => {
-            const memberCount =
-              (council.council_members?.length || 0) +
-              (council.instructors_defense_councils_chairman_idToinstructors ? 1 : 0) +
-              (council.instructors_defense_councils_secretary_idToinstructors ? 1 : 0);
-            const thesisCount = council.defense_assignments?.length || 0;
-
-            return (
-              <Card
-                key={council.id}
-                className="hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer flex flex-col justify-between"
-                onClick={() => handleViewDetail(council)}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <div>
-                      <CardTitle className="text-lg leading-tight">{council.council_name}</CardTitle>
-                      <p className="text-xs font-mono text-muted-foreground mt-0.5">{council.council_code}</p>
-                    </div>
-                    <Badge variant={getStatusBadgeVariant(council.status)}>
-                      {translateStatus(council.status)}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2.5 text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Calendar className="w-4 h-4 shrink-0 text-primary" />
-                      <span className="font-medium text-foreground">
-                        {council.defense_date ? new Date(council.defense_date).toLocaleDateString('vi-VN') : 'Chưa xác định'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Crown className="w-4 h-4 text-amber-600 shrink-0" />
-                      <span className="truncate">
-                        Chủ tịch: <strong className="font-medium text-foreground">{council.instructors_defense_councils_chairman_idToinstructors?.users?.full_name || 'Chưa phân công'}</strong>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <FileText className="w-4 h-4 text-blue-600 shrink-0" />
-                      <span className="truncate">
-                        Thư ký: <strong className="font-medium text-foreground">{council.instructors_defense_councils_secretary_idToinstructors?.users?.full_name || 'Chưa phân công'}</strong>
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground border-t border-border/50">
-                      <div className="flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>{thesisCount} luận văn</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>{memberCount} thành viên</span>
-                      </div>
-                    </div>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="w-full mt-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewDetail(council);
-                    }}
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/50">
+              <tr className="border-b border-border bg-muted/40">
+                {Header.map((header) => (
+                  <th
+                    key={header.text}
+                    className="text-left py-4 px-4 font-semibold text-muted-foreground"
                   >
-                    Xem chi tiết
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+                    {header.text}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCouncils.map((council, index) => {
+                const memberCount =
+                  (council.council_members?.length || 0) +
+                  (council.instructors_defense_councils_chairman_idToinstructors
+                    ? 1
+                    : 0) +
+                  (council.instructors_defense_councils_secretary_idToinstructors
+                    ? 1
+                    : 0);
+                const thesisCount = council.defense_assignments?.length || 0;
+                return (
+                  <tr
+                    key={council.id}
+                    className="border-b last:border-0 hover:bg-muted/50 transition-colors"
+                  >
+                    {/* STT */}{' '}
+                    <td className="p-2 w-[30px] text-center">{index + 1}</td>
+                    {/* Tên hội đồng */}
+                    <td className="p-3 font-medium min-w-[220px]">
+                      <div className="whitespace-normal break-words">
+                        {council.council_name}
+                      </div>
+                    </td>
+                    {/* Mã hội đồng */}
+                    <td className="p-2 min-w-[70px]">
+                      <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+                        {council.council_code}
+                      </span>
+                    </td>
+                    {/* Ngày bảo vệ */}
+                    <td className="p-2 min-w-[80px] whitespace-nowrap">
+                      {council.defense_date
+                        ? new Date(council.defense_date).toLocaleDateString(
+                            'vi-VN',
+                          )
+                        : 'Chưa xác định'}
+                    </td>
+                    {/* Chủ tịch */}
+                    <td className="p-2 min-w-[100px] truncate">
+                      {council
+                        .instructors_defense_councils_chairman_idToinstructors
+                        ?.users?.full_name || 'Chưa phân công'}
+                    </td>
+                    {/* Thư ký */}
+                    <td className="p-2 min-w-[100px] truncate">
+                      {council
+                        .instructors_defense_councils_secretary_idToinstructors
+                        ?.users?.full_name || 'Chưa phân công'}
+                    </td>
+                    {/* Luận văn */}
+                    <td className="p-2 text-center"> {thesisCount} </td>
+                    {/* Thành viên */}
+                    <td className="p-2 min-w-[50px] text-center">
+                      {' '}
+                      {memberCount}{' '}
+                    </td>
+                    {/* Trạng thái */}
+                    <td className="p-1">
+                      <Badge variant={getStatusBadgeVariant(council.status)}>
+                        {translateStatus(council.status)}
+                      </Badge>
+                    </td>
+                    {/* Thao tác */}
+                    <td className="p-1 text-center">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Xem chi tiết"
+                        onClick={() => handleViewDetail(council)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 

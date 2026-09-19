@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,16 +15,49 @@ interface ModalCreateUserProps {
 
 export function ModalCreateUser({ isOpen, onClose, onSuccess }: ModalCreateUserProps) {
   const [loading, setLoading] = useState(false);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     full_name: '',
     phone: '',
-    role: 'student' as 'student' | 'instructor' | 'admin',
+    role: 'student' as 'student' | 'instructor' | 'head' | 'admin',
     student_code: '',
     username: '',
     instructor_code: '',
+    class_id: '' as string | number,
+    department_id: '' as string | number,
   });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const loadData = async () => {
+      try {
+        const [deptsData, classesData] = await Promise.allSettled([
+          adminService.getDepartments(),
+          adminService.getClasses(),
+        ]);
+        if (deptsData.status === 'fulfilled') {
+          const list = Array.isArray(deptsData.value) ? deptsData.value : (deptsData.value as any)?.data || [];
+          setDepartments(list);
+          if (list.length > 0) {
+            setFormData(prev => ({ ...prev, department_id: prev.department_id || list[0].id }));
+          }
+        }
+        if (classesData.status === 'fulfilled') {
+          const list = Array.isArray(classesData.value) ? classesData.value : (classesData.value as any)?.data || [];
+          setClasses(list);
+          if (list.length > 0) {
+            setFormData(prev => ({ ...prev, class_id: prev.class_id || list[0].id }));
+          }
+        }
+      } catch (err) {
+        console.error('Error loading departments/classes:', err);
+      }
+    };
+    loadData();
+  }, [isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -41,6 +74,8 @@ export function ModalCreateUser({ isOpen, onClose, onSuccess }: ModalCreateUserP
       student_code: '',
       username: '',
       instructor_code: '',
+      class_id: classes[0]?.id || '',
+      department_id: departments[0]?.id || '',
     });
   };
 
@@ -61,13 +96,13 @@ export function ModalCreateUser({ isOpen, onClose, onSuccess }: ModalCreateUserP
           password: formData.password,
           full_name: formData.full_name.trim(),
           phone: formData.phone.trim(),
-          class_id: 1,
+          class_id: Number(formData.class_id) || classes[0]?.id || 1,
           major_id: 1,
         });
       } else if (formData.role === 'instructor' || formData.role === 'head') {
         await adminService.createInstructor({
           instructor_code: formData.instructor_code?.trim() || `GV_${Date.now().toString().slice(-4)}`,
-          department_id: 1,
+          department_id: Number(formData.department_id) || departments[0]?.id || 1,
           degree: formData.role === 'head' ? 'Tiến sĩ' : 'Thạc sĩ',
           academic_title: formData.role === 'head' ? 'Trưởng bộ môn' : 'Giảng viên',
           specialization: 'CNTT',
@@ -177,6 +212,25 @@ export function ModalCreateUser({ isOpen, onClose, onSuccess }: ModalCreateUserP
         {formData.role === 'student' && (
           <div className="p-3 bg-muted/40 rounded-lg space-y-3 border">
             <div className="space-y-1">
+              <Label className="text-xs font-semibold">Lớp sinh hoạt</Label>
+              <select
+                name="class_id"
+                value={formData.class_id}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-border rounded-md text-xs bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {classes.length > 0 ? (
+                  classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.class_name} {c.class_code ? `(${c.class_code})` : ''}
+                    </option>
+                  ))
+                ) : (
+                  <option value="1">Lớp mặc định (1)</option>
+                )}
+              </select>
+            </div>
+            <div className="space-y-1">
               <Label className="text-xs font-semibold">Mã sinh viên (Tùy chọn)</Label>
               <Input
                 name="student_code"
@@ -201,6 +255,25 @@ export function ModalCreateUser({ isOpen, onClose, onSuccess }: ModalCreateUserP
 
         {(formData.role === 'instructor' || formData.role === 'head') && (
           <div className="p-3 bg-muted/40 rounded-lg space-y-3 border">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Bộ môn trực thuộc</Label>
+              <select
+                name="department_id"
+                value={formData.department_id}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-border rounded-md text-xs bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {departments.length > 0 ? (
+                  departments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.department_name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="1">Bộ môn mặc định (1)</option>
+                )}
+              </select>
+            </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Mã giảng viên (Tùy chọn)</Label>
               <Input
