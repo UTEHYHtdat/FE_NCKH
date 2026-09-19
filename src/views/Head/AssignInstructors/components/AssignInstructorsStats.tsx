@@ -15,6 +15,8 @@ interface AssignInstructorsStatsProps {
   totalInstructorsCount: number;
   totalSupervisionQuota: number;
   unassignedCount: number;
+  selfRegisterCount?: number;
+  setQuotaCount?: number;
 }
 
 export function AssignInstructorsStats({
@@ -26,6 +28,8 @@ export function AssignInstructorsStats({
   totalInstructorsCount,
   totalSupervisionQuota,
   unassignedCount,
+  selfRegisterCount,
+  setQuotaCount,
 }: AssignInstructorsStatsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -111,15 +115,28 @@ export function AssignInstructorsStats({
         <CardContent className="p-4 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Tổng chỉ tiêu hướng dẫn
+              Chỉ tiêu hướng dẫn
             </p>
-            <h3 className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
-              {totalSupervisionQuota}{' '}
-              <span className="text-xs font-normal text-muted-foreground">đề tài / nhóm</span>
-            </h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              Hạn mức nhận SV tối đa
-            </p>
+            {totalSupervisionQuota > 0 ? (
+              <>
+                <h3 className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
+                  {totalSupervisionQuota}{' '}
+                  <span className="text-xs font-normal text-muted-foreground">đề tài</span>
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {setQuotaCount || 0} GV có hạn mức {selfRegisterCount ? `• ${selfRegisterCount} GV tự set` : ''}
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+                  GV tự đăng ký
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Giáo viên tự thiết lập hạn mức
+                </p>
+              </>
+            )}
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
             <Sliders className="w-5 h-5" />

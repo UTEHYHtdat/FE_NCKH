@@ -11,7 +11,7 @@ interface AssignedInstructorsTableProps {
   searchTerm: string;
   onSearchChange: (val: string) => void;
   instructorQuotas: Record<number, number>;
-  onChangeQuota: (id: number, value: number) => void;
+  onChangeQuota: (id: number, value: number | null) => void;
   totalSupervisionQuota: number;
   onRemoveInstructor: (id: number) => void;
   onRemoveAll: () => void;
@@ -29,6 +29,11 @@ export function AssignedInstructorsTable({
   onRemoveAll,
   onViewDetail,
 }: AssignedInstructorsTableProps) {
+  const selfRegisterCount = instructors.filter(
+    (ins) => !instructorQuotas[ins.id] || instructorQuotas[ins.id] <= 0
+  ).length;
+  const setQuotaCount = instructors.length - selfRegisterCount;
+
   return (
     <Card className="shadow-sm border border-emerald-500/30 bg-emerald-500/[0.02] flex flex-col h-[700px]">
       <CardContent className="p-4 flex flex-col h-full">
@@ -43,14 +48,26 @@ export function AssignedInstructorsTable({
                 Giáo viên đã thêm vào đợt
               </h3>
               <p className="text-[11px] text-muted-foreground">
-                Giảng viên chính thức được phép hướng dẫn & chấm trong đợt này
+                Giảng viên chính thức được phép hướng dẫn & phản biện trong đợt này
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="emerald" className="text-xs font-semibold">
-              {instructors.length} GV ({totalSupervisionQuota} chỉ tiêu)
-            </Badge>
+            <div className="flex items-center gap-1.5">
+              <Badge variant="emerald" className="text-xs font-semibold">
+                {instructors.length} GV
+              </Badge>
+              {totalSupervisionQuota > 0 && (
+                <Badge variant="outline" className="text-[11px] text-amber-600 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 font-medium">
+                  {totalSupervisionQuota} chỉ tiêu ({setQuotaCount} GV)
+                </Badge>
+              )}
+              {selfRegisterCount > 0 && (
+                <Badge variant="outline" className="text-[11px] text-blue-600 border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 font-medium">
+                  {selfRegisterCount} GV tự đăng ký
+                </Badge>
+              )}
+            </div>
             {instructors.length > 0 && (
               <Button
                 size="sm"
@@ -124,17 +141,30 @@ export function AssignedInstructorsTable({
                       </span>
                     </td>
                     <td className="py-2.5 px-3 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <input
-                          type="number"
-                          min={1}
-                          max={30}
-                          value={instructorQuotas[ins.id] || 5}
-                          onChange={(e) => onChangeQuota(ins.id, Number(e.target.value))}
-                          className="w-14 h-7 text-center border border-input rounded text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary bg-background"
-                          title="Số lượng đề tài/nhóm hướng dẫn tối đa"
-                        />
-                        <span className="text-[10px] text-muted-foreground">đề tài</span>
+                      <div className="flex flex-col items-center justify-center gap-0.5">
+                        <div className="flex items-center justify-center gap-1">
+                          <input
+                            type="number"
+                            min={1}
+                            max={30}
+                            value={instructorQuotas[ins.id] !== undefined && instructorQuotas[ins.id] !== null && instructorQuotas[ins.id] > 0 ? instructorQuotas[ins.id] : ''}
+                            onChange={(e) => {
+                              const val = e.target.value.trim();
+                              onChangeQuota(ins.id, val === '' ? null : Number(val));
+                            }}
+                            placeholder="GV tự set"
+                            className="w-18 h-7 text-center border border-input rounded text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary bg-background placeholder:text-[10px] placeholder:font-normal placeholder:text-muted-foreground"
+                            title="Số lượng đề tài hướng dẫn tối đa. Để trống để giáo viên tự đăng ký hạn mức."
+                          />
+                          {instructorQuotas[ins.id] && instructorQuotas[ins.id] > 0 ? (
+                            <span className="text-[10px] text-muted-foreground">đề tài</span>
+                          ) : null}
+                        </div>
+                        {(!instructorQuotas[ins.id] || instructorQuotas[ins.id] <= 0) && (
+                          <span className="text-[9px] text-blue-600 dark:text-blue-400 font-normal">
+                            GV tự đăng ký
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="py-2.5 px-3 text-right whitespace-nowrap">

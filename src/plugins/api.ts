@@ -2516,9 +2516,20 @@ export const thesisRoundsService = {
       quotas?: Record<number, number>;
     },
   ): Promise<any> {
+    const rawIds = data.instructorIds || data.instructor_ids || [];
+    const payload: any = {
+      instructorIds: rawIds,
+      instructor_ids: rawIds,
+      quotas: data.quotas || {},
+    };
+    if (data.supervisionQuota !== undefined || data.supervision_quota !== undefined) {
+      const q = data.supervisionQuota ?? data.supervision_quota;
+      payload.supervisionQuota = q;
+      payload.supervision_quota = q;
+    }
     return apiClient.post<any>(
       `/api/admin/thesis-rounds/${id}/instructors`,
-      data,
+      payload,
     );
   },
 
@@ -2629,6 +2640,15 @@ export const thesisRoundsService = {
     data: any,
   ): Promise<any> {
     return this.assignInstructors(roundId, data);
+  },
+  async updateMySupervisionQuota(
+    roundId: number,
+    quota: number,
+  ): Promise<any> {
+    return apiClient.put<any>(`/api/v1/thesis/thesis-rounds/${roundId}/my-quota`, {
+      supervision_quota: quota,
+      quota,
+    });
   },
   async getInstructorAssignmentsForHead(
     roundId: number,

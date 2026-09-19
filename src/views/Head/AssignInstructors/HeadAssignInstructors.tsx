@@ -161,7 +161,9 @@ export function HeadAssignInstructors() {
         const insId = Number(item.instructor_id || item.instructors?.id);
         if (insId) {
           assignedSet.add(insId);
-          quotasMap[insId] = item.supervision_quota || 5;
+          if (item.supervision_quota !== null && item.supervision_quota !== undefined && item.supervision_quota > 0) {
+            quotasMap[insId] = Number(item.supervision_quota);
+          }
         }
       });
 
@@ -176,7 +178,9 @@ export function HeadAssignInstructors() {
         const fallbackQuotas: Record<number, number> = {};
         (selectedRound as any).instructor_assignments.forEach((ia: any) => {
           fallbackSet.add(ia.instructor_id);
-          fallbackQuotas[ia.instructor_id] = ia.supervision_quota || 5;
+          if (ia.supervision_quota !== null && ia.supervision_quota !== undefined && ia.supervision_quota > 0) {
+            fallbackQuotas[ia.instructor_id] = Number(ia.supervision_quota);
+          }
         });
         setAssignedInstructorIds(fallbackSet);
         setInitialAssignedInstructorIds(new Set(fallbackSet));
@@ -205,12 +209,6 @@ export function HeadAssignInstructors() {
       next.add(instructorId);
       return next;
     });
-    setInstructorQuotas((prev) => {
-      if (!prev[instructorId]) {
-        return { ...prev, [instructorId]: 5 };
-      }
-      return prev;
-    });
   };
 
   const handleRemoveInstructor = (instructorId: number) => {
@@ -227,13 +225,6 @@ export function HeadAssignInstructors() {
       unassignedInstructors.forEach((ins) => next.add(ins.id));
       return next;
     });
-    setInstructorQuotas((prev) => {
-      const next = { ...prev };
-      unassignedInstructors.forEach((ins) => {
-        if (!next[ins.id]) next[ins.id] = 5;
-      });
-      return next;
-    });
   };
 
   const handleRemoveAllAssigned = () => {
@@ -244,12 +235,16 @@ export function HeadAssignInstructors() {
     });
   };
 
-  const handleChangeQuota = (instructorId: number, value: number) => {
-    const val = Math.max(1, Math.min(30, Number(value) || 1));
-    setInstructorQuotas((prev) => ({
-      ...prev,
-      [instructorId]: val,
-    }));
+  const handleChangeQuota = (instructorId: number, value: number | null) => {
+    setInstructorQuotas((prev) => {
+      const next = { ...prev };
+      if (value === null || value === undefined || isNaN(value) || value <= 0) {
+        delete next[instructorId];
+      } else {
+        next[instructorId] = Math.min(50, Number(value));
+      }
+      return next;
+    });
   };
 
   const handleSaveInstructorAssignments = async () => {
@@ -259,9 +254,9 @@ export function HeadAssignInstructors() {
     try {
       const instructorIdsArray = Array.from(assignedInstructorIds);
       await thesisRoundsService.assignInstructorsForHead(selectedRound.id, {
+        instructorIds: instructorIdsArray,
         instructor_ids: instructorIdsArray,
         quotas: instructorQuotas,
-        supervision_quota: 5,
       });
 
       setInitialAssignedInstructorIds(new Set(assignedInstructorIds));
@@ -332,15 +327,26 @@ export function HeadAssignInstructors() {
   }, [assignedInstructorIds, initialAssignedInstructorIds, instructorQuotas, initialInstructorQuotas]);
 
   const totalSupervisionQuota = useMemo(() => {
-    return Array.from(assignedInstructorIds).reduce((sum, id) => sum + (instructorQuotas[id] || 5), 0);
+    return Array.from(assignedInstructorIds).reduce((sum, id) => {
+      const q = instructorQuotas[id];
+      return sum + (q && q > 0 ? q : 0);
+    }, 0);
   }, [assignedInstructorIds, instructorQuotas]);
+
+  const selfRegisterCount = useMemo(() => {
+    return Array.from(assignedInstructorIds).filter((id) => !instructorQuotas[id] || instructorQuotas[id] <= 0).length;
+  }, [assignedInstructorIds, instructorQuotas]);
+
+  const setQuotaCount = useMemo(() => {
+    return assignedInstructorIds.size - selfRegisterCount;
+  }, [assignedInstructorIds.size, selfRegisterCount]);
 
   return (
     <PageLayout
       userRole={userRole as any}
       userName={user?.fullName || 'Trưởng bộ môn'}
-      title="Phân công Giáo viên tham gia Đợt Đề tài"
-      subtitle="Chỉ định danh sách giảng viên tham gia hướng dẫn / phản biện và thiết lập hạn mức số lượng đề tài tối đa cho từng giảng viên trong đợt"
+      title="Thêm Giáo viên tham gia Đợt Đề tài"
+      subtitle="Chỉ định danh sách giảng viên tham gia hướng dẫn / phản biện trong đợt đề tài. Giảng viên có thể tự thiết lập hạn mức hoặc Trưởng khoa/bộ môn phân bổ trước."
       actions={
         <div className="flex items-center gap-2">
           {hasUnsavedChanges && (
@@ -358,7 +364,7 @@ export function HeadAssignInstructors() {
             ) : (
               <Save className="w-4 h-4" />
             )}
-            Lưu phân công giáo viên ({assignedInstructorIds.size} GV)
+            Lưu danh sách giáo viên ({assignedInstructorIds.size} GV)
           </Button>
         </div>
       }
@@ -373,6 +379,8 @@ export function HeadAssignInstructors() {
         totalInstructorsCount={allInstructors.length}
         totalSupervisionQuota={totalSupervisionQuota}
         unassignedCount={unassignedInstructors.length}
+        selfRegisterCount={selfRegisterCount}
+        setQuotaCount={setQuotaCount}
       />
 
       {/* 2. CẢNH BÁO THAY ĐỔI CHƯA LƯU */}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Sliders, Settings, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,13 @@ export function MyTopics() {
   const [viewMode, setViewMode] = useState<'rounds' | 'topics'>('rounds');
   const [selectedRound, setSelectedRound] = useState<ThesisRound | null>(null);
   const [roundsLoading, setRoundsLoading] = useState(true);
+  
+  // Instructor profile & self-set quota states
+  const [instructorProfile, setInstructorProfile] = useState<any>(null);
+  const [isQuotaModalOpen, setIsQuotaModalOpen] = useState(false);
+  const [quotaRound, setQuotaRound] = useState<ThesisRound | null>(null);
+  const [myQuotaValue, setMyQuotaValue] = useState<number>(5);
+  const [isSavingQuota, setIsSavingQuota] = useState(false);
   const [formData, setFormData] = useState<CreateProposedTopicRequest>({
     topic_code: '',
     topic_title: '',
@@ -40,7 +48,51 @@ export function MyTopics() {
 
   useEffect(() => {
     fetchThesisRounds();
+    fetchInstructorProfile();
   }, []);
+
+  const fetchInstructorProfile = async () => {
+    try {
+      const inst = await instructorService.getInstructorByUserId(user?.id || 0);
+      setInstructorProfile(inst);
+    } catch (e) {
+      console.error('Lỗi khi lấy thông tin giảng viên:', e);
+    }
+  };
+
+  const getMyAssignmentForRound = (roundId: number) => {
+    if (!instructorProfile) return null;
+    const assignments = instructorProfile.instructor_assignments || [];
+    return assignments.find((a: any) => a.thesis_round_id === roundId);
+  };
+
+  const handleOpenQuotaModal = (round: ThesisRound) => {
+    setQuotaRound(round);
+    const currentAssign = getMyAssignmentForRound(round.id);
+    setMyQuotaValue(currentAssign?.supervision_quota && currentAssign.supervision_quota > 0 ? currentAssign.supervision_quota : 5);
+    setIsQuotaModalOpen(true);
+  };
+
+  const handleSaveMyQuota = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quotaRound) return;
+    try {
+      setIsSavingQuota(true);
+      await thesisRoundsService.updateMySupervisionQuota(quotaRound.id, myQuotaValue);
+      toast.success(`Đã cập nhật hạn mức hướng dẫn cho đợt "${quotaRound.round_name}" thành công!`);
+      setIsQuotaModalOpen(false);
+      const [updatedInst] = await Promise.all([
+        instructorService.getInstructorByUserId(user?.id || 0),
+        fetchThesisRounds(),
+      ]);
+      setInstructorProfile(updatedInst);
+    } catch (err: any) {
+      console.error('Lỗi cập nhật hạn mức:', err);
+      toast.error(err.message || 'Không thể cập nhật hạn mức hướng dẫn');
+    } finally {
+      setIsSavingQuota(false);
+    }
+  };
 
   useEffect(() => {
     fetchTopics();
@@ -278,10 +330,46 @@ export function MyTopics() {
                                roundData.registrationDeadline ? new Date(roundData.registrationDeadline).toLocaleDateString('vi-VN') : 'N/A'}
                             </span>
                           </div>
-                          <div className="pt-2">
+                          <div className="pt-2 flex items-center justify-between border-t border-border/50">
                             <Badge variant={roundData.status === 'Active' ? 'default' : 'secondary'}>
                               {roundData.status || 'Unknown'}
                             </Badge>
+                            {(() => {
+                              const myAssign = getMyAssignmentForRound(round.id);
+                              if (!myAssign) {
+                                return (
+                                  <span className="text-[11px] text-muted-foreground">
+                                    Chưa tham gia đợt
+                                  </span>
+                                );
+                              }
+                              const quota = myAssign.supervision_quota;
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  {quota && quota > 0 ? (
+                                    <Badge variant="outline" className="text-[11px] text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700">
+                                      Hạn mức: {quota} đề tài
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-[11px] text-amber-600 border-amber-300 dark:border-amber-700">
+                                      Chưa set hạn mức
+                                    </Badge>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 text-[11px] px-1.5 text-primary hover:bg-primary/10 cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenQuotaModal(round);
+                                    }}
+                                    title="Tự thiết lập hạn mức hướng dẫn"
+                                  >
+                                    <Sliders className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              );
+                            })()}
                           </div>
                         </div>
                       </CardContent>
@@ -294,6 +382,59 @@ export function MyTopics() {
           ) : (
             /* Topics List */
             <>
+              {/* Quota Banner */}
+              {selectedRound && (
+                <Card className="mb-6 bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-primary/5 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-primary/10 border-blue-200 dark:border-blue-800/40 shadow-sm">
+                  <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-600/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                        <Sliders className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-semibold text-foreground">
+                            Hạn mức hướng dẫn của bạn trong đợt này
+                          </h4>
+                          {(() => {
+                            const assign = getMyAssignmentForRound(selectedRound.id);
+                            if (assign && assign.supervision_quota && assign.supervision_quota > 0) {
+                              return (
+                                <Badge variant="emerald" className="text-xs font-semibold">
+                                  {assign.supervision_quota} đề tài tối đa
+                                </Badge>
+                              );
+                            }
+                            return (
+                              <Badge variant="amber" className="text-xs font-medium">
+                                Chưa đăng ký hạn mức
+                              </Badge>
+                            );
+                          })()}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {(() => {
+                            const assign = getMyAssignmentForRound(selectedRound.id);
+                            if (assign && assign.supervision_quota && assign.supervision_quota > 0) {
+                              return `Bạn đang hướng dẫn: ${assign.current_load || 0} / ${assign.supervision_quota} đề tài. Sinh viên chỉ có thể đăng ký trong giới hạn này.`;
+                            }
+                            return 'Bạn chưa đặt hạn mức hướng dẫn. Hãy tự chủ động thiết lập số lượng đề tài bạn có thể nhận hướng dẫn.';
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenQuotaModal(selectedRound)}
+                      className="shrink-0 flex items-center gap-1.5 font-medium border-blue-300 dark:border-blue-700 hover:bg-blue-100/50 cursor-pointer"
+                    >
+                      <Sliders className="w-3.5 h-3.5 text-primary" />
+                      {getMyAssignmentForRound(selectedRound.id)?.supervision_quota ? 'Thay đổi hạn mức' : 'Tự đặt hạn mức'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Search */}
               <Card className="mb-6">
                 <CardContent className="p-4">
@@ -542,6 +683,62 @@ export function MyTopics() {
               Hủy
             </Button>
             <Button type="submit">Tạo đề tài</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal Giảng viên tự thiết lập Hạn mức Hướng dẫn */}
+      <Modal
+        isOpen={isQuotaModalOpen}
+        onClose={() => setIsQuotaModalOpen(false)}
+        title={`Thiết lập Hạn mức Hướng dẫn — ${quotaRound?.round_name || 'Đợt đề tài'}`}
+      >
+        <form onSubmit={handleSaveMyQuota} className="space-y-4">
+          <div className="p-3 bg-muted/40 rounded-lg text-xs text-muted-foreground space-y-1">
+            <p className="font-semibold text-foreground">
+              Thông tin đăng ký hạn mức hướng dẫn:
+            </p>
+            <p>
+              Hạn mức này đại diện cho số lượng đề tài / nhóm sinh viên tối đa mà bạn có thể đảm nhận hướng dẫn trong đợt khóa luận này.
+            </p>
+            <p>
+              Sinh viên đăng ký vào đề tài của bạn sẽ bị giới hạn bởi chỉ tiêu này. Bạn có thể chủ động cập nhật bất cứ lúc nào trước khi chốt danh sách.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1.5">
+              Số lượng đề tài / nhóm hướng dẫn tối đa <span className="text-destructive">*</span>
+            </label>
+            <div className="flex items-center gap-3">
+              <Input
+                type="number"
+                min={1}
+                max={30}
+                value={myQuotaValue}
+                onChange={(e) => setMyQuotaValue(Math.max(1, Math.min(30, parseInt(e.target.value) || 1)))}
+                className="w-32 text-center text-base font-bold"
+                required
+              />
+              <span className="text-sm text-muted-foreground">đề tài / nhóm sinh viên</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Khuyến nghị: từ 3 đến 10 đề tài tùy theo thời gian và kế hoạch giảng dạy của bạn.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={() => setIsQuotaModalOpen(false)}
+              disabled={isSavingQuota}
+            >
+              Hủy
+            </Button>
+            <Button type="submit" disabled={isSavingQuota} className="gap-2">
+              {isSavingQuota ? 'Đang lưu...' : 'Lưu hạn mức'}
+            </Button>
           </div>
         </form>
       </Modal>
