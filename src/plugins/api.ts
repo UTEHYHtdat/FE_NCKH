@@ -2504,26 +2504,44 @@ export const thesisRoundsService = {
 
   /**
    * Assign instructors to a thesis round
-   * POST /api/admin/thesis-rounds/:id/assign-instructors
+   * POST /api/admin/thesis-rounds/:id/instructors
    */
   async assignInstructors(
     id: number,
-    data: { instructorIds: number[]; supervisionQuota: number },
+    data: {
+      instructorIds?: number[];
+      instructor_ids?: number[];
+      supervisionQuota?: number;
+      supervision_quota?: number;
+      quotas?: Record<number, number>;
+    },
   ): Promise<any> {
+    const rawIds = data.instructorIds || data.instructor_ids || [];
+    const payload: any = {
+      instructorIds: rawIds,
+      instructor_ids: rawIds,
+      quotas: data.quotas || {},
+    };
+    if (data.supervisionQuota !== undefined || data.supervision_quota !== undefined) {
+      const q = data.supervisionQuota ?? data.supervision_quota;
+      payload.supervisionQuota = q;
+      payload.supervision_quota = q;
+    }
     return apiClient.post<any>(
       `/api/admin/thesis-rounds/${id}/instructors`,
-      data,
+      payload,
     );
   },
 
   /**
    * Get instructor assignments for a thesis round
+   * GET /api/admin/thesis-rounds/:id/instructors
    */
   async getInstructorAssignments(
     id: number,
-  ): Promise<StandardResponse<InstructorAssignment[]>> {
-    return apiClient.get<StandardResponse<InstructorAssignment[]>>(
-      `/api/v1/thesis/thesis-rounds/${id}/instructors`,
+  ): Promise<any> {
+    return apiClient.get<any>(
+      `/api/admin/thesis-rounds/${id}/instructors`,
     );
   },
 
@@ -2612,10 +2630,30 @@ export const thesisRoundsService = {
   },
   async assignInstructorsToRound(
     roundId: number,
-    data: { instructorIds: number[]; supervisionQuota: number },
+    data: any,
   ): Promise<StandardResponse<any>> {
     const result = await this.assignInstructors(roundId, data);
     return { data: result };
+  },
+  async assignInstructorsForHead(
+    roundId: number,
+    data: any,
+  ): Promise<any> {
+    return this.assignInstructors(roundId, data);
+  },
+  async updateMySupervisionQuota(
+    roundId: number,
+    quota: number,
+  ): Promise<any> {
+    return apiClient.put<any>(`/api/v1/thesis/thesis-rounds/${roundId}/my-quota`, {
+      supervision_quota: quota,
+      quota,
+    });
+  },
+  async getInstructorAssignmentsForHead(
+    roundId: number,
+  ): Promise<any> {
+    return this.getInstructorAssignments(roundId);
   },
 
   async getThesisRoundsForHead(): Promise<ThesisRound[]> {
@@ -2997,6 +3035,20 @@ export const topicRegistrationService = {
     if (thesisRoundId) p.append("thesis_round_id", thesisRoundId.toString());
     return apiClient.get<ProposedTopic[]>(
       `/api/topic-registrations/proposed-topics?${p.toString()}`,
+    );
+  },
+
+  async importProposedTopicsFromExcel(
+    thesisRoundId: number,
+    file: File,
+  ): Promise<any> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("thesis_round_id", thesisRoundId.toString());
+
+    return apiClient.post<any>(
+      "/api/v1/thesis/excel/import/proposed-topics",
+      formData,
     );
   },
 
