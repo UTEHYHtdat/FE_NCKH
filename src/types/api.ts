@@ -126,6 +126,18 @@ export interface LogoutResponse {
 
 
 
+// Thesis Types
+export interface ThesisType {
+  id: number;
+  type_code: string;
+  type_name: string;
+  description?: string | null;
+  has_review?: boolean;
+  has_defense?: boolean;
+  reviewer_count?: number;
+  status?: boolean;
+}
+
 // Thesis Rounds Types
 
 export interface CreateThesisRoundRequest {

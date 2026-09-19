@@ -1,98 +1,64 @@
 import { useState, useEffect } from 'react';
-import { Plus, UserPlus, Users, Mail, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Loader2, AlertCircle } from 'lucide-react';
 import { PageLayout } from '@/components/layout/PageLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge, getStatusBadgeVariant } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Modal } from '@/components/ui/Modal';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { thesisGroupsService } from '@/plugins/api';
-import { studentService } from '@/plugins/api';
-import { thesisRoundsService } from '@/plugins/api';
-import type { ThesisGroup, GroupInvitation, StudentClass, StudentClassStudent, ThesisRound } from '@/types/api';
+import { thesisGroupsService, thesisRoundsService } from '@/plugins/api';
+import type { ThesisGroup, GroupInvitation, ThesisRound } from '@/types/api';
+import {
+  MyGroupTab,
+  InvitationsTab,
+  FindGroupTab,
+  ModalCreateGroup,
+  ModalInviteMember,
+  type CreateGroupFormData,
+} from './components';
 
 export function GroupManagement() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const userRole = user?.role || 'student';
+
+  // Active tab state
+  const [activeTab, setActiveTab] = useState<string>('my-group');
+
+  // Modals state
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
   const [isInviteMemberModalOpen, setIsInviteMemberModalOpen] = useState(false);
+
+  // Data state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [myGroup, setMyGroup] = useState<ThesisGroup | null>(null);
   const [invitations, setInvitations] = useState<GroupInvitation[]>([]);
   const [availableGroups, setAvailableGroups] = useState<ThesisGroup[]>([]);
-  const [createGroupForm, setCreateGroupForm] = useState({
-    group_name: '',
-    thesis_round_id: '',
-    group_type: 'GROUP' as 'GROUP' | 'INDIVIDUAL',
-    min_members: 2,
-    max_members: 4,
-  });
-  const [inviteForm, setInviteForm] = useState({
-    invited_student_ids: [] as string[],
-    invitation_message: '',
-  });
-  const [classes, setClasses] = useState<any[]>([]);
-  const [selectedClass, setSelectedClass] = useState<string>('');
-  const [studentSearchTerm, setStudentSearchTerm] = useState<string>('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [searchingStudents, setSearchingStudents] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [thesisRounds, setThesisRounds] = useState<ThesisRound[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch data on mount
+  // Student Profile info for class-scoped invitation
+  const studentInfo = (profile as any)?.student || (user as any)?.student;
+  const studentClassId = studentInfo?.class_id || (user as any)?.class_id;
+  const studentClassName = studentInfo?.classes?.class_name || profile?.className || (user as any)?.className;
+  const studentClassCode = studentInfo?.classes?.class_code;
+  const currentStudentId = studentInfo?.id || profile?.id || user?.id;
+
+  // Existing member student IDs in my group
+  const existingMemberStudentIds = (myGroup?.thesis_group_members || []).map(
+    (m: any) => m.student_id || m.students?.id
+  ).filter(Boolean);
+
+  // Fetch initial data
   useEffect(() => {
     fetchData();
   }, [user?.id]);
 
-  // Fetch classes when invite modal opens
+  // Fetch thesis rounds when create modal is opened
   useEffect(() => {
-    if (isInviteMemberModalOpen) {
-      fetchClasses();
-    }
-  }, [isInviteMemberModalOpen]);
-
-  // Fetch students when class is selected
-  useEffect(() => {
-    if (selectedClass) {
-      fetchStudentsByClass();
-    }
-  }, [selectedClass]);
-
-  // Fetch thesis rounds when create group modal opens
-  useEffect(() => {
-    if (isCreateGroupModalOpen) {
+    if (isCreateGroupModalOpen && thesisRounds.length === 0) {
       fetchThesisRounds();
     }
   }, [isCreateGroupModalOpen]);
-
-  const fetchStudentsByClass = async () => {
-    if (!selectedClass) return;
-    
-    try {
-      setSearchingStudents(true);
-      const classWithStudents = await studentService.getClassById(parseInt(selectedClass));
-      setSearchResults(classWithStudents.students);
-    } catch (e) {
-      console.error('Error fetching students by class:', e);
-    } finally {
-      setSearchingStudents(false);
-    }
-  };
-
-  const fetchClasses = async () => {
-    try {
-      const classData = await studentService.getClasses();
-      setClasses(classData);
-    } catch (e) {
-      console.error('Error fetching classes:', e);
-    }
-  };
 
   const fetchThesisRounds = async () => {
     try {
@@ -100,50 +66,6 @@ export function GroupManagement() {
       setThesisRounds(response.data || []);
     } catch (e) {
       console.error('Error fetching thesis rounds:', e);
-    }
-  };
-
-  const searchStudents = async () => {
-    if (!selectedClass) return;
-    
-    try {
-      setSearchingStudents(true);
-      
-      // Fetch class with students
-      const classWithStudents = await studentService.getClassById(parseInt(selectedClass));
-      
-      // Filter students by search term (name or student code)
-      const filteredStudents = classWithStudents.students.filter((student: StudentClassStudent) => {
-        if (!studentSearchTerm) return true;
-        const searchTerm = studentSearchTerm.toLowerCase();
-        return (
-          student.users.full_name.toLowerCase().includes(searchTerm) ||
-          student.student_code.toLowerCase().includes(searchTerm)
-        );
-      });
-      
-      setSearchResults(filteredStudents);
-    } catch (e) {
-      console.error('Error searching students:', e);
-    } finally {
-      setSearchingStudents(false);
-    }
-  };
-
-  const handleSelectStudent = (student: StudentClassStudent) => {
-    const studentId = student.id.toString();
-    const isSelected = inviteForm.invited_student_ids.includes(studentId);
-    
-    if (isSelected) {
-      setInviteForm({
-        ...inviteForm,
-        invited_student_ids: inviteForm.invited_student_ids.filter(id => id !== studentId),
-      });
-    } else {
-      setInviteForm({
-        ...inviteForm,
-        invited_student_ids: [...inviteForm.invited_student_ids, studentId],
-      });
     }
   };
 
@@ -157,7 +79,7 @@ export function GroupManagement() {
         return;
       }
 
-      // Fetch my group
+      // 1. Fetch my group
       try {
         const groups = await thesisGroupsService.getThesisGroups(user.id);
         if (groups && groups.length > 0) {
@@ -169,7 +91,7 @@ export function GroupManagement() {
         console.error('Error fetching my group:', e);
       }
 
-      // Fetch invitations
+      // 2. Fetch invitations
       try {
         const invs = await thesisGroupsService.getInvitations(user.id);
         setInvitations(invs.filter((inv) => inv.status === 'PENDING'));
@@ -177,14 +99,17 @@ export function GroupManagement() {
         console.error('Error fetching invitations:', e);
       }
 
-      // Fetch available groups (groups that are forming and have space)
+      // 3. Fetch available groups
       try {
         const allGroups = await thesisGroupsService.getThesisGroups();
-        setAvailableGroups(allGroups.filter((g) => 
-          g.status === 'FORMING' && 
-          g.thesis_group_members && 
-          g.thesis_group_members.length < g.max_members
-        ));
+        setAvailableGroups(
+          allGroups.filter(
+            (g) =>
+              g.status === 'FORMING' &&
+              g.thesis_group_members &&
+              g.thesis_group_members.length < g.max_members
+          )
+        );
       } catch (e) {
         console.error('Error fetching available groups:', e);
       }
@@ -196,8 +121,8 @@ export function GroupManagement() {
     }
   };
 
-  const handleCreateGroup = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Handler: Create Group
+  const handleCreateGroup = async (formData: CreateGroupFormData) => {
     if (!user?.id) return;
 
     try {
@@ -205,23 +130,16 @@ export function GroupManagement() {
       setError(null);
 
       await thesisGroupsService.createThesisGroup({
-        group_name: createGroupForm.group_name,
-        thesis_round_id: parseInt(createGroupForm.thesis_round_id),
-        group_type: createGroupForm.group_type as any,
-        min_members: createGroupForm.min_members,
-        max_members: createGroupForm.max_members,
+        group_name: formData.group_name,
+        thesis_round_id: parseInt(formData.thesis_round_id),
+        group_type: formData.group_type as any,
+        min_members: formData.min_members,
+        max_members: formData.max_members,
         student_id: user.id,
       });
 
       setIsCreateGroupModalOpen(false);
-      setCreateGroupForm({
-        group_name: '',
-        thesis_round_id: '',
-        group_type: 'GROUP',
-        min_members: 2,
-        max_members: 4,
-      });
-      fetchData();
+      await fetchData();
     } catch (e: any) {
       console.error('Error creating group:', e);
       setError(e.message || 'Không thể tạo nhóm. Vui lòng thử lại.');
@@ -230,33 +148,25 @@ export function GroupManagement() {
     }
   };
 
-  const handleSendInvitation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user?.id || !myGroup || inviteForm.invited_student_ids.length === 0) return;
+  // Handler: Send Class-scoped Invitations
+  const handleSendInvitation = async (invitedStudentIds: string[], message: string) => {
+    if (!user?.id || !myGroup || invitedStudentIds.length === 0) return;
 
     try {
       setIsSubmitting(true);
       setError(null);
 
-      // Send invitation to each selected student
-      for (const studentId of inviteForm.invited_student_ids) {
+      for (const studentId of invitedStudentIds) {
         await thesisGroupsService.createGroupInvitation({
           thesis_group_id: myGroup.id,
           invited_student_id: parseInt(studentId),
-          invitation_message: inviteForm.invitation_message,
+          invitation_message: message,
           student_id: user.id,
         });
       }
 
       setIsInviteMemberModalOpen(false);
-      setInviteForm({
-        invited_student_ids: [],
-        invitation_message: '',
-      });
-      setSelectedClass('');
-      setSearchResults([]);
-      setStudentSearchTerm('');
-      fetchData();
+      await fetchData();
     } catch (e: any) {
       console.error('Error sending invitation:', e);
       setError(e.message || 'Không thể gửi lời mời. Vui lòng thử lại.');
@@ -265,6 +175,7 @@ export function GroupManagement() {
     }
   };
 
+  // Handler: Accept Invitation
   const handleAcceptInvitation = async (invitationId: number) => {
     if (!user?.id) return;
 
@@ -273,7 +184,7 @@ export function GroupManagement() {
       setError(null);
 
       await thesisGroupsService.acceptInvitation(invitationId, user.id);
-      fetchData();
+      await fetchData();
     } catch (e: any) {
       console.error('Error accepting invitation:', e);
       setError(e.message || 'Không thể chấp nhận lời mời. Vui lòng thử lại.');
@@ -282,6 +193,7 @@ export function GroupManagement() {
     }
   };
 
+  // Handler: Reject Invitation
   const handleRejectInvitation = async (invitationId: number) => {
     if (!user?.id) return;
 
@@ -290,7 +202,7 @@ export function GroupManagement() {
       setError(null);
 
       await thesisGroupsService.rejectInvitation(invitationId, user.id);
-      fetchData();
+      await fetchData();
     } catch (e: any) {
       console.error('Error rejecting invitation:', e);
       setError(e.message || 'Không thể từ chối lời mời. Vui lòng thử lại.');
@@ -299,15 +211,20 @@ export function GroupManagement() {
     }
   };
 
+  // Handler: Leave Group
   const handleLeaveGroup = async () => {
     if (!user?.id || !myGroup) return;
+
+    if (!window.confirm('Bạn có chắc chắn muốn rời nhóm này?')) {
+      return;
+    }
 
     try {
       setIsSubmitting(true);
       setError(null);
 
       await thesisGroupsService.leaveGroup(user.id, myGroup.id);
-      fetchData();
+      await fetchData();
     } catch (e: any) {
       console.error('Error leaving group:', e);
       setError(e.message || 'Không thể rời nhóm. Vui lòng thử lại.');
@@ -316,10 +233,11 @@ export function GroupManagement() {
     }
   };
 
+  // Handler: Dissolve Group
   const handleDissolveGroup = async () => {
     if (!user?.id || !myGroup) return;
 
-    if (!window.confirm('Bạn có chắc chắn muốn giải tán nhóm này? Hành động này không thể hoàn tác.')) {
+    if (!window.confirm('Bạn có chắc chắn muốn giải tán nhóm này? Toàn bộ thành viên sẽ rời nhóm và hành động này không thể hoàn tác.')) {
       return;
     }
 
@@ -328,7 +246,7 @@ export function GroupManagement() {
       setError(null);
 
       await thesisGroupsService.dissolveThesisGroup(myGroup.id, user.id);
-      fetchData();
+      await fetchData();
     } catch (e: any) {
       console.error('Error dissolving group:', e);
       setError(e.message || 'Không thể giải tán nhóm. Vui lòng thử lại.');
@@ -341,7 +259,7 @@ export function GroupManagement() {
     return (
       <PageLayout
         userRole={userRole as any}
-        userName={user?.fullName || 'Nguyễn Văn A'}
+        userName={user?.fullName || 'Sinh viên'}
         title="Quản lý nhóm"
         subtitle={userRole === 'admin' ? 'Quản lý tổ chức và nhóm trong hệ thống' : 'Quản lý nhóm khóa luận của bạn'}
       >
@@ -355,472 +273,99 @@ export function GroupManagement() {
   return (
     <PageLayout
       userRole={userRole as any}
-      userName={user?.fullName || 'Nguyễn Văn A'}
+      userName={user?.fullName || 'Sinh viên'}
       title="Quản lý nhóm"
       subtitle={userRole === 'admin' ? 'Quản lý tổ chức và nhóm trong hệ thống' : 'Quản lý nhóm khóa luận của bạn'}
     >
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600" />
-          <p className="text-red-800">{error}</p>
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-lg flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+            <p className="text-red-800 dark:text-red-200 text-sm font-medium">{error}</p>
+          </div>
           <Button variant="ghost" size="sm" onClick={() => setError(null)}>
             Đóng
           </Button>
         </div>
       )}
-      <Tabs defaultValue="my-group">
-        <div className="flex items-center justify-between mb-6">
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <TabsList>
             <TabsTrigger value="my-group">Nhóm của tôi</TabsTrigger>
             <TabsTrigger value="invitations">
               Lời mời
               {invitations.length > 0 && (
-                <Badge variant="destructive" className="ml-2">{invitations.length}</Badge>
+                <Badge variant="destructive" className="ml-2 px-1.5 py-0.5 text-xs">
+                  {invitations.length}
+                </Badge>
               )}
             </TabsTrigger>
             <TabsTrigger value="find-group">Tìm nhóm</TabsTrigger>
           </TabsList>
-          <Button onClick={() => setIsCreateGroupModalOpen(true)}>
-            <Plus className="w-4 h-4" />
-            Tạo nhóm mới
-          </Button>
+
+          {!myGroup && (
+            <Button onClick={() => setIsCreateGroupModalOpen(true)}>
+              <Plus className="w-4 h-4 mr-1.5" />
+              Tạo nhóm mới
+            </Button>
+          )}
         </div>
 
-        {/* My Group Tab */}
-        <TabsContent value="my-group" className="mt-6">
-          {myGroup ? (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle>{myGroup.group_name}</CardTitle>
-                      <CardDescription className="mt-1">
-                        Mã nhóm: {myGroup.id}
-                      </CardDescription>
-                    </div>
-                    <Badge variant={getStatusBadgeVariant(myGroup.status)}>
-                      {myGroup.status === 'FORMING' ? 'Đang hình thành' : myGroup.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-muted-foreground">Số thành viên</span>
-                      <span className="font-medium">{myGroup.thesis_group_members?.length || 0}/{myGroup.max_members}</span>
-                    </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary"
-                        style={{ width: `${((myGroup.thesis_group_members?.length || 0) / myGroup.max_members) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 mb-6">
-                    {myGroup.thesis_group_members?.map((member: any) => (
-                      <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg border border-border">
-                        <Avatar name={member.students?.users?.full_name || 'Unknown'} size="md" />
-                        <div className="flex-1">
-                          <p className="font-medium">{member.students?.users?.full_name || 'Unknown'}</p>
-                          <p className="text-sm text-muted-foreground">{member.students?.student_code || ''}</p>
-                        </div>
-                        {member.role === 'LEADER' && (
-                          <Badge variant="default">Trưởng nhóm</Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-3">
-                    {(myGroup.thesis_group_members?.length || 0) < myGroup.max_members && (
-                      <Button
-                        className="flex-1"
-                        onClick={() => setIsInviteMemberModalOpen(true)}
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        Mời thành viên
-                      </Button>
-                    )}
-                    {myGroup?.thesis_group_members?.find((m: any) => m.students?.users?.id === user?.id)?.role === 'LEADER' ? (
-                      <Button
-                        variant="destructive"
-                        className="flex-1"
-                        onClick={handleDissolveGroup}
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Giải tán nhóm'}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        className="flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        onClick={handleLeaveGroup}
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Rời nhóm'}
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Chưa có nhóm</h3>
-                <p className="text-muted-foreground mb-6">
-                  Bạn chưa tham gia nhóm nào. Tạo nhóm mới hoặc tìm nhóm để tham gia.
-                </p>
-                <div className="flex gap-3 justify-center">
-                  <Button onClick={() => setIsCreateGroupModalOpen(true)}>
-                    <Plus className="w-4 h-4" />
-                    Tạo nhóm mới
-                  </Button>
-                  <Button variant="ghost">Tìm nhóm để tham gia</Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        {/* Tab 1: Nhóm của tôi */}
+        <TabsContent value="my-group" className="mt-0">
+          <MyGroupTab
+            myGroup={myGroup}
+            currentUserId={user?.id}
+            isSubmitting={isSubmitting}
+            onOpenCreateModal={() => setIsCreateGroupModalOpen(true)}
+            onOpenInviteModal={() => setIsInviteMemberModalOpen(true)}
+            onLeaveGroup={handleLeaveGroup}
+            onDissolveGroup={handleDissolveGroup}
+            onSwitchToFindGroup={() => setActiveTab('find-group')}
+          />
         </TabsContent>
 
-        {/* Invitations Tab */}
-        <TabsContent value="invitations" className="mt-6">
-          <div className="space-y-4">
-            {invitations.length > 0 ? (
-              invitations.map((invitation) => (
-                <Card key={invitation.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <Mail className="w-6 h-6 text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold mb-1">{invitation.thesis_groups?.group_name || 'Nhóm'}</h4>
-                        <p className="text-sm text-muted-foreground mb-1">
-                          Mã nhóm: {invitation.thesis_groups?.group_code || invitation.thesis_group_id}
-                        </p>
-                        <p className="text-sm mb-2">
-                          <span className="text-muted-foreground">Người mời:</span>{' '}
-                          {invitation.students_invited_by?.users?.full_name || 'Unknown'}
-                        </p>
-                        {invitation.invitation_message && (
-                          <p className="text-sm text-muted-foreground mb-3">
-                            "{invitation.invitation_message}"
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          Trạng thái: {invitation.status === 'PENDING' ? 'Đang chờ' : invitation.status}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleAcceptInvitation(invitation.id)}
-                          disabled={isSubmitting}
-                        >
-                          {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Chấp nhận'}
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          onClick={() => handleRejectInvitation(invitation.id)}
-                          disabled={isSubmitting}
-                        >
-                          {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Từ chối'}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <p className="text-muted-foreground">Không có lời mời nào</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+        {/* Tab 2: Lời mời tham gia */}
+        <TabsContent value="invitations" className="mt-0">
+          <InvitationsTab
+            invitations={invitations}
+            isSubmitting={isSubmitting}
+            onAccept={handleAcceptInvitation}
+            onReject={handleRejectInvitation}
+          />
         </TabsContent>
 
-        {/* Find Group Tab */}
-        <TabsContent value="find-group" className="mt-6">
-          <Card className="mb-6">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input placeholder="Tìm kiếm nhóm..." />
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tất cả trạng thái" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                    <SelectItem value="FORMING">Đang tìm thành viên</SelectItem>
-                    <SelectItem value="ACTIVE">Đã đủ thành viên</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="space-y-4">
-            {availableGroups.length > 0 ? (
-              availableGroups.map((group) => (
-                <Card key={group.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold">{group.group_name}</h4>
-                          <Badge variant={getStatusBadgeVariant(group.status)}>
-                            Đang tìm thành viên
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Mã nhóm: {group.group_code}
-                        </p>
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="text-muted-foreground">
-                            Thành viên: <span className="text-foreground font-medium">
-                              {group.thesis_group_members?.length || 0}/{group.max_members}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <Button>Gửi yêu cầu</Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <p className="text-muted-foreground">Không có nhóm nào đang tìm thành viên</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+        {/* Tab 3: Tìm kiếm nhóm */}
+        <TabsContent value="find-group" className="mt-0">
+          <FindGroupTab
+            availableGroups={availableGroups}
+          />
         </TabsContent>
       </Tabs>
 
-      {/* Create Group Modal */}
-      <Modal
+      {/* Modal Tạo nhóm mới */}
+      <ModalCreateGroup
         isOpen={isCreateGroupModalOpen}
         onClose={() => setIsCreateGroupModalOpen(false)}
-        title="Tạo nhóm mới"
-        size="md"
-      >
-        <form onSubmit={handleCreateGroup} className="space-y-4">
-          <div>
-            <Label htmlFor="group_name">Tên nhóm</Label>
-            <Input 
-              id="group_name"
-              placeholder="VD: Nhóm nghiên cứu AI" 
-              required 
-              value={createGroupForm.group_name}
-              onChange={(e) => setCreateGroupForm({ ...createGroupForm, group_name: e.target.value })}
-              className="mt-2"
-            />
-          </div>
-          <div>
-            <Label htmlFor="thesis_round_id">Đợt khóa luận</Label>
-            <Select
-              value={createGroupForm.thesis_round_id}
-              onValueChange={(value) => setCreateGroupForm({ ...createGroupForm, thesis_round_id: value })}
-            >
-              <SelectTrigger className="mt-2">
-                <SelectValue placeholder="Chọn đợt khóa luận..." />
-              </SelectTrigger>
-              <SelectContent>
-                {thesisRounds.map((round) => (
-                  <SelectItem key={round.id} value={round.id.toString()}>
-                    {round.round_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Loại nhóm</Label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input 
-                  type="radio" 
-                  name="groupType" 
-                  value="INDIVIDUAL" 
-                  checked={createGroupForm.group_type === 'INDIVIDUAL'}
-                  onChange={(e) => setCreateGroupForm({ ...createGroupForm, group_type: e.target.value as any })}
-                />
-                <span className="text-sm">Cá nhân</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input 
-                  type="radio" 
-                  name="groupType" 
-                  value="GROUP" 
-                  checked={createGroupForm.group_type === 'GROUP'}
-                  onChange={(e) => setCreateGroupForm({ ...createGroupForm, group_type: e.target.value as any })}
-                />
-                <span className="text-sm">Nhóm</span>
-              </label>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="min_members">Số thành viên tối thiểu</Label>
-              <Input 
-                id="min_members"
-                type="number" 
-                min="1"
-                step="1"
-                value={createGroupForm.min_members}
-                onChange={(e) => setCreateGroupForm({ ...createGroupForm, min_members: Math.max(1, parseInt(e.target.value) || 1) })}
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <Label htmlFor="max_members">Số thành viên tối đa</Label>
-              <Input 
-                id="max_members"
-                type="number" 
-                min={createGroupForm.min_members || 1}
-                step="1"
-                value={createGroupForm.max_members}
-                onChange={(e) => setCreateGroupForm({ ...createGroupForm, max_members: Math.max(createGroupForm.min_members || 1, parseInt(e.target.value) || 1) })}
-                className="mt-2"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <Button variant="ghost" type="button" onClick={() => setIsCreateGroupModalOpen(false)}>
-              Hủy
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Tạo nhóm'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        onSubmit={handleCreateGroup}
+        thesisRounds={thesisRounds}
+        isSubmitting={isSubmitting}
+      />
 
-      {/* Invite Member Modal */}
-      <Modal
+      {/* Modal Mời thành viên (Chỉ trong lớp) */}
+      <ModalInviteMember
         isOpen={isInviteMemberModalOpen}
         onClose={() => setIsInviteMemberModalOpen(false)}
-        title="Mời thành viên"
-        size="md"
-      >
-        <form onSubmit={handleSendInvitation} className="space-y-4">
-          <div>
-            <Label htmlFor="class_select">Chọn lớp</Label>
-            <Select
-              value={selectedClass}
-              onValueChange={(value) => {
-                setSelectedClass(value);
-                setSearchResults([]);
-              }}
-            >
-              <SelectTrigger className="mt-2">
-                <SelectValue placeholder="Chọn lớp học" />
-              </SelectTrigger>
-              <SelectContent>
-                {classes.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id.toString()}>
-                    {cls.class_name} ({cls.class_code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="student_search">Tìm kiếm sinh viên</Label>
-            <Input
-              id="student_search"
-              placeholder="Nhập họ tên hoặc mã sinh viên..."
-              value={studentSearchTerm}
-              onChange={(e) => setStudentSearchTerm(e.target.value)}
-              className="mt-2"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={searchStudents}
-              disabled={!selectedClass || searchingStudents}
-            >
-              {searchingStudents ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Tìm kiếm'}
-            </Button>
-          </div>
-          
-          {selectedClass && searchResults.length > 0 && (
-            <div className="space-y-2">
-              <Label>Danh sách sinh viên ({searchResults.length})</Label>
-              <div className="border border-border rounded-lg p-4 max-h-64 overflow-y-auto">
-                <div className="grid grid-cols-2 gap-3">
-                  {searchResults.map((student) => {
-                    const isSelected = inviteForm.invited_student_ids.includes(student.id.toString());
-                    return (
-                      <div
-                        key={student.id}
-                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                          isSelected 
-                            ? 'border-primary bg-primary/10' 
-                            : 'border-border hover:bg-muted'
-                        }`}
-                        onClick={() => handleSelectStudent(student)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{student.users.full_name}</p>
-                            <p className="text-xs text-muted-foreground">MSSV: {student.student_code}</p>
-                            <p className="text-xs text-muted-foreground">{student.users.email}</p>
-                          </div>
-                          {isSelected && (
-                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              {inviteForm.invited_student_ids.length > 0 && (
-                <div className="text-sm text-muted-foreground">
-                  Đã chọn {inviteForm.invited_student_ids.length} sinh viên
-                </div>
-              )}
-            </div>
-          )}
-          
-          <div>
-            <Label htmlFor="invitation_message">Lời nhắn</Label>
-            <Input 
-              id="invitation_message"
-              placeholder="Thêm lời nhắn cho lời mời..."
-              value={inviteForm.invitation_message}
-              onChange={(e) => setInviteForm({ ...inviteForm, invitation_message: e.target.value })}
-              className="mt-2"
-            />
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <Button variant="ghost" type="button" onClick={() => setIsInviteMemberModalOpen(false)}>
-              Hủy
-            </Button>
-            <Button type="submit" disabled={isSubmitting || inviteForm.invited_student_ids.length === 0}>
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : `Gửi lời mời (${inviteForm.invited_student_ids.length})`}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        onSendInvitation={handleSendInvitation}
+        isSubmitting={isSubmitting}
+        currentStudentId={currentStudentId}
+        currentUserId={user?.id}
+        existingMemberStudentIds={existingMemberStudentIds}
+        studentClassId={studentClassId}
+        studentClassName={studentClassName}
+        studentClassCode={studentClassCode}
+      />
     </PageLayout>
   );
 }

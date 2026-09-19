@@ -2123,12 +2123,12 @@ export function markSocketRead(conversationId: number): void {
 
 /** Báo đang gõ phím */
 export function startTyping(conversationId: number): void {
-  socket?.emit("startTyping", { conversationId });
+  socket?.emit("typingStart", { conversationId });
 }
 
 /** Báo ngừng gõ phím */
 export function stopTyping(conversationId: number): void {
-  socket?.emit("stopTyping", { conversationId });
+  socket?.emit("typingStop", { conversationId });
 }
 
 // --- studentService.ts ---
@@ -2711,6 +2711,22 @@ export const thesisRoundsService = {
 };
 
 export const thesisRoundService = thesisRoundsService;
+
+export const thesisTypesService = {
+  /**
+   * Get list of thesis types (KLTN, DATN, DA1, DA2, DA3, BTL, NCKH)
+   * GET /api/thesis-types
+   */
+  async getThesisTypes(): Promise<ThesisType[]> {
+    try {
+      const res = await apiClient.get<any>("/api/thesis-types");
+      return res.data || (Array.isArray(res) ? res : []);
+    } catch (error) {
+      console.error("Error fetching thesis types:", error);
+      return [];
+    }
+  },
+};
 
 // --- thesisService.ts ---
 
