@@ -2123,12 +2123,12 @@ export function markSocketRead(conversationId: number): void {
 
 /** Báo đang gõ phím */
 export function startTyping(conversationId: number): void {
-  socket?.emit("startTyping", { conversationId });
+  socket?.emit("typingStart", { conversationId });
 }
 
 /** Báo ngừng gõ phím */
 export function stopTyping(conversationId: number): void {
-  socket?.emit("stopTyping", { conversationId });
+  socket?.emit("typingStop", { conversationId });
 }
 
 // --- studentService.ts ---
