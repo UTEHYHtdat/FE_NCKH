@@ -2504,11 +2504,17 @@ export const thesisRoundsService = {
 
   /**
    * Assign instructors to a thesis round
-   * POST /api/admin/thesis-rounds/:id/assign-instructors
+   * POST /api/admin/thesis-rounds/:id/instructors
    */
   async assignInstructors(
     id: number,
-    data: { instructorIds: number[]; supervisionQuota: number },
+    data: {
+      instructorIds?: number[];
+      instructor_ids?: number[];
+      supervisionQuota?: number;
+      supervision_quota?: number;
+      quotas?: Record<number, number>;
+    },
   ): Promise<any> {
     return apiClient.post<any>(
       `/api/admin/thesis-rounds/${id}/instructors`,
@@ -2518,12 +2524,13 @@ export const thesisRoundsService = {
 
   /**
    * Get instructor assignments for a thesis round
+   * GET /api/admin/thesis-rounds/:id/instructors
    */
   async getInstructorAssignments(
     id: number,
-  ): Promise<StandardResponse<InstructorAssignment[]>> {
-    return apiClient.get<StandardResponse<InstructorAssignment[]>>(
-      `/api/v1/thesis/thesis-rounds/${id}/instructors`,
+  ): Promise<any> {
+    return apiClient.get<any>(
+      `/api/admin/thesis-rounds/${id}/instructors`,
     );
   },
 
@@ -2612,10 +2619,21 @@ export const thesisRoundsService = {
   },
   async assignInstructorsToRound(
     roundId: number,
-    data: { instructorIds: number[]; supervisionQuota: number },
+    data: any,
   ): Promise<StandardResponse<any>> {
     const result = await this.assignInstructors(roundId, data);
     return { data: result };
+  },
+  async assignInstructorsForHead(
+    roundId: number,
+    data: any,
+  ): Promise<any> {
+    return this.assignInstructors(roundId, data);
+  },
+  async getInstructorAssignmentsForHead(
+    roundId: number,
+  ): Promise<any> {
+    return this.getInstructorAssignments(roundId);
   },
 
   async getThesisRoundsForHead(): Promise<ThesisRound[]> {
