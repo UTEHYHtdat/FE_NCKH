@@ -2712,6 +2712,22 @@ export const thesisRoundsService = {
 
 export const thesisRoundService = thesisRoundsService;
 
+export const thesisTypesService = {
+  /**
+   * Get list of thesis types (KLTN, DATN, DA1, DA2, DA3, BTL, NCKH)
+   * GET /api/thesis-types
+   */
+  async getThesisTypes(): Promise<ThesisType[]> {
+    try {
+      const res = await apiClient.get<any>("/api/thesis-types");
+      return res.data || (Array.isArray(res) ? res : []);
+    } catch (error) {
+      console.error("Error fetching thesis types:", error);
+      return [];
+    }
+  },
+};
+
 // --- thesisService.ts ---
 
 export interface Thesis {

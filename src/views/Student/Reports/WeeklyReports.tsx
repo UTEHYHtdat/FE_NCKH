@@ -288,7 +288,11 @@ export function WeeklyReports() {
                     <div className="flex items-center gap-2 mt-2">
                       <FileText className="w-4 h-4 text-muted-foreground" />
                       <a 
-                        href={`http://localhost:8002${report.attachment_file}`} 
+                        href={
+                          report.attachment_file.startsWith("http")
+                            ? report.attachment_file
+                            : `${import.meta.env.VITE_API_BASE_URL || ""}${report.attachment_file}`
+                        } 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-sm text-blue-600 hover:underline"

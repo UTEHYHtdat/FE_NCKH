@@ -20,6 +20,13 @@ import * as pdfjsLib from 'pdfjs-dist';
 // Cấu hình worker cho pdfjs
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
+const getFileUrl = (url?: string) => {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002').replace(/\/+$/, '');
+  return `${baseUrl}${url}`;
+};
+
 interface CriteriaItem {
   id: string | number;
   name: string;
@@ -580,7 +587,7 @@ export function HeadGradingTemplates() {
     setViewTemplateContent('');
     
     try {
-      let fileUrl = `http://localhost:8002${tpl.template_file_url}`;
+      let fileUrl = getFileUrl(tpl.template_file_url);
       
       if (fileUrl.includes('/uploads/') && !fileUrl.includes('/uploads/weekly_reports/')) {
         fileUrl = fileUrl.replace('/uploads/', '/uploads/weekly_reports/');
@@ -1265,7 +1272,7 @@ export function HeadGradingTemplates() {
               )}
               <div className="flex items-center gap-3 shrink-0">
                 {viewTemplate?.template_file_url && (
-                  <Button variant="outline" onClick={() => window.open(`http://localhost:8002${viewTemplate.template_file_url}`, '_blank')}>
+                  <Button variant="outline" onClick={() => window.open(getFileUrl(viewTemplate.template_file_url), '_blank')}>
                     <FileText className="h-4 w-4 mr-2" /> Tải xuống
                   </Button>
                 )}
@@ -1281,14 +1288,14 @@ export function HeadGradingTemplates() {
                 </div>
               ) : viewTemplateContent === '__PDF__' ? (
                 <iframe 
-                  src={`http://localhost:8002${viewTemplate?.template_file_url}`}
+                  src={getFileUrl(viewTemplate?.template_file_url)}
                   className="w-full h-full border-0 flex-1"
                   title="PDF Viewer"
                 />
               ) : viewTemplateContent === '__UNSUPPORTED__' ? (
                 <div className="text-center p-8 m-auto">
                   <p className="text-slate-500 mb-4">Định dạng file không hỗ trợ xem trước trực tiếp.</p>
-                  <Button onClick={() => window.open(`http://localhost:8002${viewTemplate?.template_file_url}`, '_blank')}>
+                  <Button onClick={() => window.open(getFileUrl(viewTemplate?.template_file_url), '_blank')}>
                     Tải file về máy
                   </Button>
                 </div>

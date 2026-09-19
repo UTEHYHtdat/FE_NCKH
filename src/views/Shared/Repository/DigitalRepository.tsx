@@ -10,6 +10,7 @@ import { Search, BookOpen, GraduationCap, Eye, Download, Code, Sparkles, Loader2
 import { documentService } from '@/plugins/api';
 import { useAuth } from '@/contexts/AuthContext';
 import type { DigitalRepositoryItem } from '@/types/api';
+import { getAcademicYearOptions } from '@/helpers/academicYear';
 
 export function DigitalRepository() {
   const { user } = useAuth();
@@ -77,9 +78,11 @@ export function DigitalRepository() {
             className="h-9 px-3 text-xs bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary shrink-0"
           >
             <option value="all">Tất cả năm học</option>
-            <option value="2024-2025">Năm học 2024 - 2025</option>
-            <option value="2023-2024">Năm học 2023 - 2024</option>
-            <option value="2022-2023">Năm học 2022 - 2023</option>
+            {getAcademicYearOptions(5, 1).map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                Năm học {opt.label}
+              </option>
+            ))}
           </select>
         </div>
 
